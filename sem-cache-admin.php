@@ -347,7 +347,7 @@ function wp_cache_can_super_cache()
 	}
 	
 	return got_mod_rewrite()
-		&& $GLOBALS['wp_rewrite']->using_permalinks()
+		&& get_option('permalink_structure')
 		&& file_exists(ABSPATH . '.htaccess')
 		&& is_writable(ABSPATH . '.htaccess');
 }
