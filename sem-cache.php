@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: Semiologic Cache
-Plugin URI: http://www.semiologic.com/software/wp-tweaks/sem-cache/
+Plugin URI: http://www.semiologic.com/software/sem-cache/
 Description: An advanced caching module for WordPress.
 Version: 1.1.3 RC
 Author: Denis de Bernardy
