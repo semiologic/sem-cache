@@ -196,7 +196,7 @@ function wp_cache_ob_callback($buffer) {
 				$dir = trailingslashit( $cache_path . 'supercache/' . $dir );
 				$supercachedir = $cache_path . 'supercache/' . preg_replace('/:.*$/', '',  $_SERVER["HTTP_HOST"]);
 				
-				if ( !empty( $_GET )
+				if ( !empty( $_GET ) || !empty( $_COOKIE )
 					|| is_feed()
 					|| ( $super_cache_enabled == true && is_dir( substr( $supercachedir, 0, -1 ) . '.disabled' ) )
 					)
