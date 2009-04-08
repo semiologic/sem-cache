@@ -19,7 +19,7 @@ $cache_rejected_uri = array();
 $cache_debug = false;
 $cache_max_time = 3600; // an hour, in seconds
 $super_cache_max_time = 21600; // 6 hours, in seconds
-$cache_path = ABSPATH . 'wp-content/cache/';
+$cache_path = WP_CONTENT_DIR . '/cache/';
 $file_prefix = 'wp-cache-';
 
 // Change the sem_id value if you have conflicts with semaphores

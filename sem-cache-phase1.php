@@ -1,5 +1,5 @@
 <?php
-if( !@include(ABSPATH . 'wp-content/sem-cache-config.php') ) {
+if( !@include(WP_CONTENT_DIR . '/sem-cache-config.php') ) {
 	return;
 }
 if( !defined( 'sem_cache_path' ) )

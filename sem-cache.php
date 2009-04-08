@@ -30,8 +30,8 @@ global $wp_cache_config_file, $wp_cache_link, $wp_cache_config_file_sample, $wp_
 
 global $cache_enabled, $super_cache_enabled, $cache_rejected_uri, $cache_debug, $cache_max_time, $super_cache_max_time, $cache_path, $file_prefix, $sem_id, $use_flock, $blogcacheid;
 
-$wp_cache_config_file = ABSPATH . 'wp-content/sem-cache-config.php';
-$wp_cache_link = ABSPATH . 'wp-content/advanced-cache.php';
+$wp_cache_config_file = WP_CONTENT_DIR . '/sem-cache-config.php';
+$wp_cache_link = WP_CONTENT_DIR . '/advanced-cache.php';
 
 if ( !defined('sem_cache_path') )
 {
