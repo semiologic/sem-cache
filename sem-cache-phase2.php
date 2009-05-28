@@ -478,11 +478,11 @@ function wp_cache_microtime_diff($a, $b) {
 }
 
 function wp_cache_post_id() {
-	global $posts, $comment_post_ID, $post_ID, $wp_query;
+	global $posts, $comment_post_ID, $post_ID, $wp_the_query;
 	// We try hard all options. More frequent first.
 	if ($post_ID > 0 ) return $post_ID;
 	if ($comment_post_ID > 0 )  return $comment_post_ID;
-	if (is_singular()) return $wp_query->get_queried_object_id();
+	if (is_singular()) return $wp_the_query->get_queried_object_id();
 	if ($_GET['p'] > 0) return $_GET['p'];
 	if ($_POST['p'] > 0) return $_POST['p'];
 	return 0;
