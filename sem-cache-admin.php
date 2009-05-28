@@ -679,9 +679,6 @@ function wp_cache_mod_rewrite_rules($rules)
 	{
 		$rewrite_base = end($rewrite_base);
 		$rules = str_replace($rewrite_base, "\n$rewrite_base\n$extra\n", $rules);
-		
-		# optimize rewrite WordPress' rules, while we're at it...
-		$rules = str_replace('RewriteRule . ', 'RewriteRule ^ ', $rules);
 	}
 	
 	return $rules;

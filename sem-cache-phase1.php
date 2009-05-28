@@ -64,9 +64,27 @@ function wp_cache_postload() {
 
 function wp_cache_get_cookies_values() {
 	$string = '';
+	$consts = array();
+	foreach ( array(
+		'USER_COOKIE',
+		'PASS_COOKIE',
+		'AUTH_COOKIE',
+		'SECURE_AUTH_COOKIE',
+		'LOGGED_IN_COOKIE'
+		) as $const ) {
+		if ( defined($const) )
+			$consts[] = $const;
+	}
 	while ($key = key($_COOKIE)) {
-		if (preg_match("/^wp-postpass|^wordpress|^comment_author_email_/", $key)) {
+		if ( preg_match("/^wordpress|^wp-postpass_|^comment_author_email_/", $key) && $_COOKIE[$key] ) {
 			$string .= $_COOKIE[$key] . ",";
+		} else {
+			foreach ( $consts as $const ) {
+				if ( $key == constant($const) && $_COOKIE[$key] ) {
+					$string .= $_COOKIE[$key] . ",";
+					break;
+				}
+			}
 		}
 		next($_COOKIE);
 	}
