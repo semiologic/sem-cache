@@ -375,16 +375,14 @@ function wp_cache_enable($lock = false)
 		{
 			@rename( $supercachedir . ".disabled", $supercachedir );
 		}
-		
-		save_mod_rewrite_rules();
 	}
 	else
 	{
 		wp_cache_replace_line('^ *\$super_cache_enabled', '$super_cache_enabled = true;', $wp_cache_config_file);
 		$super_cache_enabled = false;
-		
-		save_mod_rewrite_rules();
 	}
+	
+	save_mod_rewrite_rules();
 	
 	wp_cache_clean_cache($file_prefix);
 }
@@ -411,14 +409,14 @@ function wp_cache_disable()
 		@rename( $supercachedir, $supercachedir . ".disabled" );
 		# prune_super_cache( $supercachedir, true );
 	}
-	
-	save_mod_rewrite_rules();
-	
-	wp_cache_clean_cache($file_prefix);
 
 	# mark as disabled
 	$cache_enabled = false;
 	$super_cache_enabled = false;
+	
+	save_mod_rewrite_rules();
+	
+	wp_cache_clean_cache($file_prefix);
 }
 
 
