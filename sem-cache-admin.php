@@ -4,11 +4,11 @@ function wp_cache_add_pages()
 {
 	if( function_exists( 'is_site_admin' ) ) {
 		if( is_site_admin() ) {
-			add_submenu_page('wpmu-admin.php', __('Cache'), __('Cache'), 'manage_options', __FILE__, 'wp_cache_manager');
-			add_options_page('Cache', 'Cache', 'manage_options', __FILE__, 'wp_cache_manager');
+			add_submenu_page('wpmu-admin.php', __('Cache'), __('Cache'), 'manage_options', 'sem-cache', 'wp_cache_manager');
+			add_options_page('Cache', 'Cache', 'manage_options', 'sem-cache', 'wp_cache_manager');
 		}
 	} else {
-		add_options_page('Cache', 'Cache', 'manage_options', __FILE__, 'wp_cache_manager');
+		add_options_page('Cache', 'Cache', 'manage_options', 'sem-cache', 'wp_cache_manager');
 	}
 }
 

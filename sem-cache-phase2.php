@@ -88,8 +88,7 @@ function wp_cache_is_rejected($uri) {
 	if (preg_match('/wp-.+\.php/', $uri))
 		return true; // likely a WP file in the root folder
 	foreach ($cache_rejected_uri as $expr) {
-		$expr = str_replace('`', '\\`', $expr);
-		if( preg_match( "`$expr`", $uri ) )
+		if( preg_match( "/" . preg_quote($expr, '/') . "/", $uri ) )
 			return true;
 	}
 	return false;
