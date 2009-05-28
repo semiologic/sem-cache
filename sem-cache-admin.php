@@ -376,7 +376,6 @@ function wp_cache_enable($lock = false)
 			@rename( $supercachedir . ".disabled", $supercachedir );
 		}
 		
-		add_filter('mod_rewrite_rules', 'wp_cache_mod_rewrite_rules', 1000);
 		save_mod_rewrite_rules();
 	}
 	else
@@ -659,6 +658,12 @@ function wpsc_remove_marker( $filename, $marker )
 
 function wp_cache_mod_rewrite_rules($rules)
 {
+	global $cache_enabled;
+	global $super_cache_enabled;
+	
+	if ( !$cache_enabled || !$super_cache_enabled || !wp_cache_can_super_cache() )
+		return $rules;
+	
 	require_once ABSPATH . 'wp-admin/includes/file.php';
 	require_once ABSPATH . 'wp-admin/includes/misc.php';
 	
@@ -666,21 +671,22 @@ function wp_cache_mod_rewrite_rules($rules)
 	$home_root = parse_url(get_option('home'));
 	$home_root = rtrim($home_root['path'], '/');
 	
-	$extra = "\n"
-		. "RewriteCond %{REQUEST_FILENAME} !-f\n"
-		. "RewriteCond %{QUERY_STRING} ^$\n"
-		. "RewriteCond %{HTTP_COOKIE} ^$\n"
-		. "RewriteCond {$home_path}/wp-content/cache/supercache/%{HTTP_HOST}%{REQUEST_URI}index.html -f\n"
-		. "RewriteRule ^ {$home_root}/wp-content/cache/supercache/%{HTTP_HOST}%{REQUEST_URI}index.html [L]\n"
-		. "\n"
-		;
+	$extra = <<<EOS
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{QUERY_STRING} ^$
+RewriteCond %{HTTP_COOKIE} ^$
+RewriteCond $home_path/wp-content/cache/supercache/%{HTTP_HOST}%{REQUEST_URI}index.html -f
+RewriteRule ^ $home_root/wp-content/cache/supercache/%{HTTP_HOST}%{REQUEST_URI}index.html [L]
+EOS;
 	
-	if ( preg_match("/RewriteBase.*/ix", $rules, $rewrite_base) )
-	{
+	if ( preg_match("/RewriteBase.+\n*/i", $rules, $rewrite_base) ) {
 		$rewrite_base = end($rewrite_base);
-		$rules = str_replace($rewrite_base, "\n$rewrite_base\n$extra\n", $rules);
+		$new_rewrite_base = trim($rewrite_base) . "\n\n" . trim($extra) . "\n\n";
+		$rules = str_replace($rewrite_base, $new_rewrite_base, $rules);
 	}
 	
 	return $rules;
 }
+
+add_filter('mod_rewrite_rules', 'wp_cache_mod_rewrite_rules', 20);
 ?>

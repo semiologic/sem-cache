@@ -87,12 +87,19 @@ function wp_cache_deactivate()
 {
 	require_once sem_cache_path . '/sem-cache-admin.php';
 	
+	global $cache_enabled;
+	global $super_cache_enabled;
+	
+	$cache_enabled = false;
+	$super_cache_enabled = false;
+	
 	if ( wp_cache_can_cache() )
 	{
 		global $wp_cache_link;
 
 		wp_cache_disable();
-		@unlink($wp_cache_link);
+		if ( $wp_cache_link )
+			@unlink($wp_cache_link);
 	}
 }
 
