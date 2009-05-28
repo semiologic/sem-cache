@@ -668,8 +668,8 @@ function wp_cache_mod_rewrite_rules($rules)
 	
 	$extra = "\n"
 		. "RewriteCond %{REQUEST_FILENAME} !-f\n"
-		. "RewriteCond %{QUERY_STRING} =\"\"\n"
-		. "RewriteCond %{HTTP_COOKIE} =\"\"\n"
+		. "RewriteCond %{QUERY_STRING} ^$\n"
+		. "RewriteCond %{HTTP_COOKIE} ^$\n"
 		. "RewriteCond {$home_path}/wp-content/cache/supercache/%{HTTP_HOST}%{REQUEST_URI}index.html -f\n"
 		. "RewriteRule ^ {$home_root}/wp-content/cache/supercache/%{HTTP_HOST}%{REQUEST_URI}index.html [L]\n"
 		. "\n"
