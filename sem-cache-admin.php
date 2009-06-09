@@ -229,7 +229,7 @@ function wp_cache_manager()
 	
 	foreach ( $cache_rejected_uri as $file )
 	{
-		echo format_to_edit($file) . "\n";
+		echo esc_html($file) . "\n";
 	}
 	
 	echo '</textarea>';
