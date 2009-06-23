@@ -6,7 +6,7 @@ Description: An advanced caching module for WordPress.
 Version: 1.2 RC
 Author: Denis de Bernardy
 Author URI: http://www.getsemiologic.com
-Text Domain: sem-cache-info
+Text Domain: sem-cache
 Domain Path: /lang
 */
 /*  Copyright 2005-2006  Ricardo Galli Granada  (email : gallir@uib.es)
