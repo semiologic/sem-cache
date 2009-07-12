@@ -44,6 +44,7 @@ function wp_cache_phase2() {
 	add_action('update_option_page_on_front', 'wp_cache_no_postid', 0);
 	add_action('update_option_page_for_posts', 'wp_cache_no_postid', 0);
 	add_action('generate_rewrite_rules', 'wp_cache_no_postid', 0);
+	add_action('load-widgets.php', 'maybe_flush_wp_cache');
 	
 	add_action('generate_rewrite_rules', 'wp_cache_toggle');
 	
@@ -401,6 +402,11 @@ function wp_cache_shutdown_callback() {
 function wp_cache_no_postid($id) {
 	wp_cache_post_change(wp_cache_post_id());
 	return $id;
+}
+
+function maybe_flush_wp_cache() {
+	if ( $_POST )
+		wp_cache_no_postid(0);
 }
 
 function wp_cache_get_postid_from_comment($comment_id) {
