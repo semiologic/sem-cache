@@ -342,8 +342,7 @@ function wp_cache_can_super_cache()
 {
 	if ( !function_exists('got_mod_rewrite') )
 	{
-		require_once ABSPATH . 'wp-admin/includes/file.php';
-		require_once ABSPATH . 'wp-admin/includes/misc.php';
+		require_once ABSPATH . 'wp-admin/includes/admin.php';
 	}
 	
 	return got_mod_rewrite()

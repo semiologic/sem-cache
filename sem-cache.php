@@ -71,8 +71,7 @@ if ( is_admin() )
 function wp_cache_activate()
 {
 	require_once sem_cache_path . '/sem-cache-admin.php';
-	require_once ABSPATH . 'wp-admin/includes/file.php';
-	require_once ABSPATH . 'wp-admin/includes/misc.php';
+	require_once ABSPATH . 'wp-admin/includes/admin.php';
 	require_once ABSPATH . 'wp-includes/rewrite.php';
 	
 	if ( !isset($GLOBALS['wp_rewrite']) ) $GLOBALS['wp_rewrite'] =& new WP_Rewrite;
