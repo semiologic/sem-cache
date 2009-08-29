@@ -283,6 +283,7 @@ function wp_cache_replace_line($old, $new, $my_file)
 	
 	$found = false;
 	$lines = file($my_file);
+	$lineending = "\r\n";
 	foreach($lines as $line) {
 	 	if ( preg_match("/$old/", $line)) {
 			$found = true;
@@ -295,7 +296,7 @@ function wp_cache_replace_line($old, $new, $my_file)
 			if ( !preg_match("/$old/", $line))
 				fputs($fd, $line);
 			else {
-				if ( $new ) fputs($fd, "$new\n");
+				if ( $new ) fputs($fd, "$new$lineending");
 			}
 		}
 		fclose($fd);
@@ -307,7 +308,7 @@ function wp_cache_replace_line($old, $new, $my_file)
 		if ( $done || !preg_match('/^define|\$|\?>/', $line))
 			fputs($fd, $line);
 		else {
-			if ( $new ) fputs($fd, "$new\n");
+			if ( $new ) fputs($fd, "$new$lineending");
 			fputs($fd, $line);
 			$done = true;
 		}
@@ -456,9 +457,11 @@ function wp_cache_check_cache_config()
 
 	if ( !@copy($wp_cache_config_file_sample, $wp_cache_config_file) ) return false;
 	
-	$path = dirname(__FILE__);
-	$path = str_replace(ABSPATH, '', $path);
-	$path = str_replace("\\", '/', $path); # windows...
+	// get path to cache plugin usable as postfix for ABSPATH const	
+	$pathes['plugin']  = dirname(__FILE__);
+	$pathes['install'] = ABSPATH;	
+	$pathes = array_map(create_function('$p', 'return str_replace(DIRECTORY_SEPARATOR, '/', $p);'), $pathes); // windows...
+	$path   = str_replace($pathes['install'], '', $pathes['plugin']);
 	
 	$line = 'define("sem_cache_path", ABSPATH . "' . $path . '");';
 	
