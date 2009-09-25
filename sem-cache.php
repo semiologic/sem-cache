@@ -79,7 +79,20 @@ function wp_cache_activate()
 	$home_path = get_home_path();
 	wpsc_remove_marker( $home_path.'.htaccess', 'WPSuperCache' );
 	
-	if ( wp_cache_can_cache() ) wp_cache_enable();
+	global $cache_enabled;
+	global $super_cache_enabled;
+	
+	$cache_enabled = false;
+	$super_cache_enabled = false;
+	
+	if ( wp_cache_can_cache() )
+	{
+		global $wp_cache_link;
+
+		wp_cache_disable();
+		if ( $wp_cache_link )
+			@unlink($wp_cache_link);
+	}
 }
 
 function wp_cache_deactivate()
