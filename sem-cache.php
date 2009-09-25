@@ -42,7 +42,7 @@ if ( !defined('sem_cache_path') )
 		define('sem_cache_path', dirname(__FILE__));
 		
 		$wp_cache_config_file_sample = sem_cache_path . '/sem-cache-config-sample.php';
-		@include($wp_cache_config_file_sample);
+		@include_once($wp_cache_config_file_sample);
 	}
 }
 
@@ -53,6 +53,9 @@ include_once sem_cache_path . '/sem-cache-base.php';
 include_once sem_cache_path . '/sem-cache-phase2.php';
 
 
+if ( function_exists('comment_form_lockdown_message') )
+	return;
+
 function comment_form_lockdown_message()
 {
 	echo '<p><strong>Notice</strong>: A cache module is enabled on this site. Your comment may take some time to appear.</p>' . "\n";
@@ -61,10 +64,8 @@ function comment_form_lockdown_message()
 if( defined( 'WPLOCKDOWN' ) && WPLOCKDOWN )
 	add_action( 'comment_form', 'comment_form_lockdown_message' );
 
-
-if ( is_admin() )
-{
-	include sem_cache_path . '/sem-cache-admin.php';
+if ( is_admin() ) {
+	include_once sem_cache_path . '/sem-cache-admin.php';
 }
 
 
