@@ -10,7 +10,7 @@ $new_cache = false;
 function wp_cache_phase2() {
 	global $cache_filename, $wp_cache_meta_object;
 	
-	if ( !function_exists('add_action') ) return;
+	if ( !function_exists('add_action') || defined('DOING_CRON') ) return;
 	
 	wp_cache_mutex_init();
 
