@@ -35,4 +35,4 @@ The [Semiologic forum](http://forum.semiologic.com) is the best place to report 
 
 = 1.2 =
 
-- Exclude requests with a cookie or GET parameter from super-caching
+- Don't super cache requests with a cookie or GET parameter
