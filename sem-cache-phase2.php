@@ -10,7 +10,7 @@ $new_cache = false;
 function wp_cache_phase2() {
 	global $cache_filename, $wp_cache_meta_object;
 	
-	if ( !function_exists('add_action') || defined('DOING_CRON') ) return;
+	if ( !function_exists('add_action') ) return;
 	
 	wp_cache_mutex_init();
 
@@ -52,7 +52,7 @@ function wp_cache_phase2() {
 		
 	if ( is_admin() ) return;
 
-	if( $_SERVER["REQUEST_METHOD"] == 'POST') 
+	if( $_SERVER["REQUEST_METHOD"] == 'POST' || defined('DOING_CRON') ) 
 		return;
 	$script = basename($_SERVER['PHP_SELF']);
 	if ( !in_array($script,
