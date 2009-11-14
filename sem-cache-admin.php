@@ -663,7 +663,7 @@ function wp_cache_mod_rewrite_rules($rules)
 	
 	require_once ABSPATH . 'wp-admin/includes/file.php';
 	require_once ABSPATH . 'wp-admin/includes/misc.php';
-	
+
 	$home_path = rtrim(get_home_path(), '/');
 	$home_root = parse_url(get_option('home'));
 	$home_root = rtrim($home_root['path'], '/');

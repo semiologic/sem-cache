@@ -3,7 +3,7 @@ Contributors: Denis-de-Bernardy
 Donate link: http://www.semiologic.com/partners/
 Tags: semiologic
 Requires at least: 2.8
-Tested up to: 2.8.6
+Tested up to: 2.9
 Stable tag: trunk
 
 A high performance cache for WordPress.
@@ -32,6 +32,11 @@ The [Semiologic forum](http://forum.semiologic.com) is the best place to report 
 
 
 == Change Log ==
+
+
+= 1.2.1 =
+
+- Improve handling of custom wp-content and plugin folders
 
 = 1.2 =
 

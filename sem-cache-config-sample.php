@@ -7,7 +7,10 @@ See sem-cache.php for author details.
 
 // these variables can be set using the admin interface
 
-define( 'sem_cache_path', dirname(__FILE__) . '/plugins/sem-cache' );
+if ( defined('WP_PLUGIN_DIR') )
+	define('sem_cache_path', WP_PLUGIN_DIR . '/sem-cache');
+else
+	define('sem_cache_path', WP_CONTENT_DIR . '/plugins/sem-cache');
 
 $cache_enabled = false;
 $super_cache_enabled = false;
@@ -19,7 +22,7 @@ $cache_rejected_uri = array();
 $cache_debug = false;
 $cache_max_time = 3600; // an hour, in seconds
 $super_cache_max_time = 21600; // 6 hours, in seconds
-$cache_path = WP_CONTENT_DIR . '/cache/';
+$cache_path = ABSPATH . 'wp-content/cache/';
 $file_prefix = 'wp-cache-';
 
 // Change the sem_id value if you have conflicts with semaphores
