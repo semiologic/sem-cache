@@ -756,6 +756,10 @@ EOS;
 	 **/
 
 	function flush_objects() {
+		# do not flush anything if the session handler is memcached
+		if ( ini_get('session.save_handler') === 'memcache' )
+			return;
+		
 		$vars = array(
 			'update_core',
 			'update_plugins',
@@ -1233,6 +1237,7 @@ EOS;
 	 **/
 
 	function flush_cache($in = null) {
+		self::flush_static();
 		return $in;
 	} # flush_cache()
 } # sem_cache
