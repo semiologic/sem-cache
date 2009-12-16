@@ -254,47 +254,6 @@ class object_cache {
 		return $result;
 	}
 
-	function colorize_debug_line($line) {
-		$colors = array(
-			'get' => 'green',
-			'set' => 'purple',
-			'add' => 'blue',
-			'delete' => 'red');
-
-		$cmd = substr($line, 0, strpos($line, ' '));
-
-		$cmd2 = "<span style='color:{$colors[$cmd]}'>$cmd</span>";
-
-		return $cmd2 . substr($line, strlen($cmd)) . "\n";
-	}
-
-	function stats() {
-		echo "<p>\n";
-		foreach ( $this->stats as $stat => $n ) {
-			echo "<strong>$stat</strong> $n";
-			echo "<br/>\n";
-		}
-		echo "</p>\n";
-		echo "<h3>Memcached:</h3>";
-		foreach ( $this->group_ops as $group => $ops ) {
-			if ( !isset($_GET['debug_queries']) && 500 < count($ops) ) { 
-				$ops = array_slice( $ops, 0, 500 ); 
-				echo "<big>Too many to show! <a href='" . add_query_arg( 'debug_queries', 'true' ) . "'>Show them anyway</a>.</big>\n";
-			} 
-			echo "<h4>$group commands</h4>";
-			echo "<pre>\n";
-			$lines = array();
-			foreach ( $ops as $op ) {
-				$lines[] = $this->colorize_debug_line($op); 
-			}
-			print_r($lines);
-			echo "</pre>\n";
-		}
-
-		if ( $this->debug )
-			var_dump($this->memcache_debug);
-	}
-
 	function &get_mc($group) {
 		if ( isset($this->mc[$group]) )
 			return $this->mc[$group];
