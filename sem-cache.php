@@ -1187,8 +1187,6 @@ EOS;
 
 	function get_stats() {
 		$date = date('Y-m-d @ H:i:s');
-		if ( !sem_cache_debug )
-			return "\n<!-- $date -->\n";
 		
 		$time_spent = ( 1000 * timer_stop() ) . 'ms';
 		$style = 'text-align: center; font-size: 8px;';
@@ -1211,10 +1209,12 @@ EOS;
 		global $wp_object_cache;
 		$stats .= " Object Cache: $wp_object_cache->cache_hits hits / " . ( $wp_object_cache->cache_hits + $wp_object_cache->cache_misses ) . ".";
 		
-		if ( sem_cache_debug && !is_feed() )
+		if ( ( sem_cache_debug || !is_admin() && current_user_can('manage_options') ) && !is_feed() )
 			return "\n<p style='$style'>$stats</p>";
-		else
+		elseif ( sem_cache_debug )
 			return "\n<!-- $stats -->";
+		else
+			return "\n<!-- $date -->\n";
 	} # get_stats()
 	
 	
