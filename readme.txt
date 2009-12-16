@@ -15,9 +15,15 @@ The Semiologic Cache plugin for WordPress is a high performance cache for sites 
 
 Activate the Semiologic Cache plugin, and browse Settings / Cache to use the plugin.
 
-Contrary to similar WP plugins, this one strives for simplicity. There are no complicated looking options to choose from. The cache is either off, on or locked.
+Contrary to similar WP plugins, this one strives for simplicity. There are no complicated looking options to choose from. The cache's various elements are either on, or off -- with no options.
 
-The locked cache differs in that it does not refresh posts when new comments are posted. You'll want to activate this option if a page on your site is the subject of massive incoming traffic from the social media sites such as Digg, Reddit or Slashdot.
+It implements each and every one of the following:
+
+- Static-level caching, which potentially serves pre-generated pages even before PHP loads
+- Query-level caching, which serves cached SQL queries to avoid hits to the database for logged in users
+- Persistent object-level caching, which makes WP objects persistent from a page to the next to avoid further hits to the database
+- Asset-level caching, which concatenates javascript and CSS files on the site's front end to avoid further hits to the server
+- GZip-level caching, which conditionally serves compressed files at the apache level (which is faster than using php)
 
 
 = Help Me! =
@@ -33,6 +39,10 @@ The [Semiologic forum](http://forum.semiologic.com) is the best place to report 
 
 == Change Log ==
 
+= 2.0 =
+
+- Complete rewrite
+- Add query cache, object cache, asset cache and gzip cache
 
 = 1.2.1 =
 
