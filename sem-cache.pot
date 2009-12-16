@@ -1,0 +1,237 @@
+# Semiologic Cache pot file.
+# Copyright (C) 2009 Mesoconcepts <http://www.mesoconcepts.com>
+# This file is distributed under the same license as the Semiologic Cache package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: 2.0\n"
+"Report-Msgid-Bugs-To: https://tickets.semiologic.com\n"
+"POT-Creation-Date: 2009-12-16 21:28+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: sem-cache-admin.php:30
+msgid "Cache Flushed."
+msgstr ""
+
+#: sem-cache-admin.php:45
+msgid "Settings saved. Cache Disabled."
+msgstr ""
+
+#: sem-cache-admin.php:89
+msgid "Settings saved. Cache Enabled."
+msgstr ""
+
+#: sem-cache-admin.php:119
+msgid "Cache Settings"
+msgstr ""
+
+#: sem-cache-admin.php:125
+msgid "Please do it for me..."
+msgstr ""
+
+#: sem-cache-admin.php:129
+msgid "Turn the cache on"
+msgstr ""
+
+#: sem-cache-admin.php:133
+msgid "Turn the cache off"
+msgstr ""
+
+#: sem-cache-admin.php:137
+msgid "Flush the cache"
+msgstr ""
+
+#: sem-cache-admin.php:140
+msgid ""
+"The first of the above three buttons will autodetect the best means to "
+"improve the performance of your site, and turn the cache on. The second one "
+"will turn the cache off. The last one will retain your settings, and stick "
+"to flushing the cache."
+msgstr ""
+
+#: sem-cache-admin.php:147
+msgid "Static Cache"
+msgstr ""
+
+#: sem-cache-admin.php:161
+msgid "Serve filesystem-based, static versions of my site's web pages."
+msgstr ""
+
+#: sem-cache-admin.php:175
+msgid "Serve memcached-based, static versions of my site's web pages."
+msgstr ""
+
+#: sem-cache-admin.php:179
+msgid ""
+"The static cache will attempt to serve previously rendered version of the "
+"requested web pages to visitors who aren't logged in. The key drawback is "
+"that your visitors are not always viewing the latest version of your web "
+"pages. Lists of recent posts and recent comments, for instance, may take up "
+"to 12 hours to refresh across your site. In addition, it prevents any random "
+"elements that are introduced at the php level from working."
+msgstr ""
+
+#: sem-cache-admin.php:182
+msgid ""
+"Key web pages on your site will get refreshed when you edit your posts and "
+"pages, so as to ensure they're reasonably fresh. Newly approved comments "
+"will trigger throttled refreshes of an even smaller subset of web pages. "
+"Statically cached web pages expire after 12 hours."
+msgstr ""
+
+#: sem-cache-admin.php:185
+msgid ""
+"The benefit of the filesystem-based static cache is that your site's key web "
+"pages, such as the site's front page or individual posts, will be served "
+"without even loading PHP. This allows for maximum scalability if your site "
+"is getting hammered by excrutiating traffic."
+msgstr ""
+
+#: sem-cache-admin.php:188
+msgid ""
+"The memcached-based static cache works in a similar manner, but stores "
+"cached pages in memcached rather than on the filesystem. PHP is always "
+"loaded, so it's a bit slower for key web pages; but it's much faster than "
+"using the filesystem for other web pages."
+msgstr ""
+
+#: sem-cache-admin.php:191
+msgid ""
+"You'll usually want both turned on, in order to get the best of both worlds. "
+"The only exception is if your site is hosted on multiple servers: in this "
+"case, consider sticking to the memory-based static cache, because of the lag "
+"introduced by the filesystem's synchronisations from a server to the next."
+msgstr ""
+
+#: sem-cache-admin.php:198
+msgid "Query Cache"
+msgstr ""
+
+#: sem-cache-admin.php:212
+msgid "Cache MySQL query results in memory."
+msgstr ""
+
+#: sem-cache-admin.php:216
+msgid ""
+"The query cache lets WordPress work in a fully dynamic manner, while doing "
+"its best to avoid hits to the MySQL database."
+msgstr ""
+
+#: sem-cache-admin.php:219
+msgid ""
+"The query cache primarily benefits commentors and users who are logged in; "
+"in particular yourself. These users cannot benefit from a static cache, "
+"because each of web page on your site potentially contains data that is "
+"specific to them; but they fully benefit from a query cache."
+msgstr ""
+
+#: sem-cache-admin.php:222
+msgid ""
+"The query cache's refresh policy is similar to that of the memory-based "
+"static cache: key queries are flushed whenever you edit posts or pages, or "
+"approve new comments. All of the remaining queries expire after 12 hours."
+msgstr ""
+
+#: sem-cache-admin.php:229
+msgid "Object Cache"
+msgstr ""
+
+#: sem-cache-admin.php:243
+msgid "Make WordPress objects persistent."
+msgstr ""
+
+#: sem-cache-admin.php:247
+msgid ""
+"The object cache stores granular bits of information in memcached, and makes "
+"them available from a page to the next. This allows WordPress to load web "
+"pages without always needing to retrieve things such as options, users, or "
+"individual entries from the database."
+msgstr ""
+
+#: sem-cache-admin.php:250
+msgid ""
+"The object cache's primary benefit is that it is always accurate: at no time "
+"will it ever serve data that is potentially outdated."
+msgstr ""
+
+#: sem-cache-admin.php:253
+msgid ""
+"The object cache is automatically turned on, and cannot be disabled, if you "
+"use the memory-based static cache or the query cache."
+msgstr ""
+
+#: sem-cache-admin.php:260
+msgid "Asset Cache"
+msgstr ""
+
+#: sem-cache-admin.php:274
+msgid "Enable the asset cache."
+msgstr ""
+
+#: sem-cache-admin.php:278
+msgid ""
+"The asset cache speeds your site up by minimizing the number of server "
+"requests. It achieve this by concatenating your javascript and CSS files on "
+"the front end."
+msgstr ""
+
+#: sem-cache-admin.php:281
+msgid ""
+"This setting should always be turned on, unless you're in the process of "
+"manually editing these assets."
+msgstr ""
+
+#: sem-cache-admin.php:288
+msgid "File Compression"
+msgstr ""
+
+#: sem-cache-admin.php:302
+msgid "Enable text file compression."
+msgstr ""
+
+#: sem-cache-admin.php:306
+msgid ""
+"Compressing files that are sent by your site trims the load time by as much "
+"as 70%. The file compression itself is taken care of at the Apache level, by "
+"using mod_deflate."
+msgstr ""
+
+#: sem-cache-admin.php:309
+msgid ""
+"This setting should always be turned on, unless you're in the process of "
+"manually editing files on your site."
+msgstr ""
+
+#: sem-cache-admin.php:318
+msgid "Save Changes"
+msgstr ""
+
+#: sem-cache.php:65 sem-cache.php:66 sem-cache.php:86
+msgid "Cache"
+msgstr ""
+
+#: sem-cache.php:173
+#, php-format
+msgid "Error: Failed to create %s."
+msgstr ""
+
+#: sem-cache.php:202 sem-cache.php:435
+#, php-format
+msgid "Error: Failed to write %s."
+msgstr ""
+
+#: sem-cache.php:248 sem-cache.php:286
+msgid "Error: Failed to override the WP_CACHE define in wp-config.php."
+msgstr ""
+
+#: sem-cache.php:296 sem-cache.php:460
+#, php-format
+msgid "Error: Failed to delete %s."
+msgstr ""
