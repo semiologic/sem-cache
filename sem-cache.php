@@ -119,15 +119,6 @@ class sem_cache {
 
 	static function deactivate() {
 		self::disable();
-		
-		foreach ( array(
-			'static_cache',
-			'memory_cache',
-			'query_cache',
-			'asset_cache',
-			'gzip_cache',
-			) as $ops )
-			delete_option($ops);
 	} # deactivate()
 	
 	
