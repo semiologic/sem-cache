@@ -1228,6 +1228,14 @@ EOS;
 	 **/
 
 	function flush_cache($in = null) {
+		foreach ( array(
+			'static_cache',
+			'memory_cache',
+			'query_cache',
+			'asset_cache',
+			'gzip_cache',
+			) as $ops )
+			add_option($ops, '0');
 		self::flush_static();
 		return $in;
 	} # flush_cache()
