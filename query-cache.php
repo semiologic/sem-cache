@@ -478,7 +478,6 @@ class query_cache {
 		
 		$has_private_posts = get_transient('has_private_posts');
 		if ( $has_private_posts === false ) {
-			$wpdb->show_errors();
 			$has_private_posts = intval($wpdb->get_var("SELECT EXISTS( SELECT 1 FROM $wpdb->posts WHERE post_status = 'private' );"));
 			set_transient('has_private_posts', $has_private_posts);
 		}
