@@ -28,9 +28,6 @@ class sem_cache_admin {
 			sem_cache::flush_static($timeout);
 			sem_cache::flush_objects($timeout);
 			
-			if ( file_exists(WP_CONTENT_DIR . '/cache/wp_cache_mutex.lock') )
-				cache_fs::flush('/', $timeout);
-			
 			echo '<div class="updated fade">' . "\n"
 				. '<p>'
 					. '<strong>'
@@ -99,6 +96,9 @@ class sem_cache_admin {
 				. '</div>' . "\n";
 			break;
 		}
+		
+		if ( file_exists(WP_CONTENT_DIR . '/cache/wp_cache_mutex.lock') )
+			cache_fs::flush('/', $timeout);
 	} # save_options()
 	
 	
