@@ -175,6 +175,10 @@ class object_cache {
 	}
 
 	function flush() {
+		# do not flush anything if the session handler is memcached
+		if ( ini_get('session.save_handler') === 'memcache' )
+			return false;
+		
 		$ret = true;
 		foreach ( array_keys($this->mc) as $group )
 			$ret &= $this->mc[$group]->flush();

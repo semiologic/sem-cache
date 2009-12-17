@@ -18,11 +18,15 @@ class sem_cache_admin {
 		
 		check_admin_referer('sem_cache');
 		
+		$timeout = false;
 		switch ( $_POST['action'] ) {
+		case 'clean':
+			$timeout = cache_timeout;
+		
 		case 'flush':
-			sem_cache::flush_assets();
-			sem_cache::flush_static();
-			sem_cache::flush_objects();
+			sem_cache::flush_assets($timeout);
+			sem_cache::flush_static($timeout);
+			sem_cache::flush_objects($timeout);
 			
 			echo '<div class="updated fade">' . "\n"
 				. '<p>'
@@ -116,6 +120,8 @@ class sem_cache_admin {
 		$can_assets = sem_cache::can_assets();
 		$can_gzip = sem_cache::can_gzip();
 		
+		list($files, $expired) = cache_fs::stats();
+		
 		echo '<h2>' . __('Cache Settings', 'sem-cache') . '</h2>' . "\n";
 		
 		echo '<table class="form-table">' . "\n";
@@ -134,7 +140,11 @@ class sem_cache_admin {
 					. '</button>'
 			. ' '
 			. '<button type="submit" name="action" value="flush" class="submit button">'
-				. __('Flush the cache', 'sem-cache')
+				. sprintf(__('Flush %d cached files', 'sem-cache'), $files)
+				. '</button>'
+			. ' '
+			. '<button type="submit" name="action" value="clean" class="submit button">'
+				. sprintf(__('Flush %d expired files', 'sem-cache'), $expired)
 				. '</button>'
 			. '<p>'
 			. __('The first of the above three buttons will autodetect the best means to improve the performance of your site, and turn the cache on. The second one will turn the cache off. The last one will retain your settings, and stick to flushing the cache.', 'sem-cache')

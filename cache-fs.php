@@ -172,7 +172,7 @@ class cache_fs {
 	 * @return array($total_pages, $expired_pages)
 	 **/
 
-	public static function stats($dir, $timeout = false, $bucket = null) {
+	public static function stats($dir = '/', $timeout = false, $bucket = null) {
 		static $total_pages = 0;
 		static $expired_pages = 0;
 		if ( !isset($bucket) ) {
