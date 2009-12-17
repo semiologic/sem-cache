@@ -583,7 +583,7 @@ EOS;
 		if ( isset($can_gzip) )
 			return $can_gzip;
 		
-		$can_gzip = apache_mod_loaded('mod_deflate')
+		$can_gzip = apache_mod_loaded('mod_deflate') && apache_mod_loaded('mod_headers')
 			&& is_writable(ABSPATH . '.htaccess');
 		
 		return $can_gzip;
