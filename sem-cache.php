@@ -746,7 +746,7 @@ EOS;
 			'aspen',
 			'dream',
 			'android',
-			'BlackBerry'
+			'BlackBerry',
 			);
 		return apply_filters('sem_cache_mobile_agents', $agents);
 	} # get_mobile_agents()

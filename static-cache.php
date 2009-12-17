@@ -165,9 +165,10 @@ class static_cache {
 			return;
 		
 		global $sem_mobile_agents;
-		$sem_mobile_agents = array_map('preg_quote', (array) $sem_mobile_agents);
-		$sem_mobile_agents = implode("|", $sem_mobile_agents);
-		if ( preg_match("{($sem_mobile_agents)}", $_SERVER['HTTP_USER_AGENT']) )
+		$mobile_agents = $sem_mobile_agents;
+		$mobile_agents = array_map('preg_quote', (array) $mobile_agents);
+		$mobile_agents = implode("|", $mobile_agents);
+		if ( preg_match("{($mobile_agents)}", $_SERVER['HTTP_USER_AGENT']) )
 			return;
 		
 		#header("Content-Type: text/plain");
@@ -283,9 +284,10 @@ class static_cache {
 		global $sem_mobile_agents;
 		if ( $sem_mobile_agents != sem_cache::get_mobile_agents() )
 			return $buffer;
-		$sem_mobile_agents = array_map('preg_quote', (array) $sem_mobile_agents);
-		$sem_mobile_agents = implode("|", $sem_mobile_agents);
-		if ( preg_match("{($sem_mobile_agents)}", $_SERVER['HTTP_USER_AGENT']) )
+		$mobile_agents = $sem_mobile_agents;
+		$mobile_agents = array_map('preg_quote', (array) $mobile_agents);
+		$mobile_agents = implode("|", $mobile_agents);
+		if ( preg_match("{($mobile_agents)}", $_SERVER['HTTP_USER_AGENT']) )
 			return $buffer;
 		
 		if ( self::$static ) {
