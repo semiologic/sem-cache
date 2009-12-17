@@ -164,6 +164,12 @@ class static_cache {
 			)
 			return;
 		
+		global $sem_mobile_agents;
+		$sem_mobile_agents = array_map('preg_quote', (array) $sem_mobile_agents);
+		$sem_mobile_agents = implode("|", $sem_mobile_agents);
+		if ( preg_match("{($sem_mobile_agents)}", $_SERVER['HTTP_USER_AGENT']) )
+			return;
+		
 		#header("Content-Type: text/plain");
 		#var_dump($_SERVER);
 		#die;
@@ -271,6 +277,15 @@ class static_cache {
 		
 		# sanity check on incomplete files
 		if ( !preg_match("/(?:<\/html>|<\/rss>|<\/feed>)/i",$buffer) )
+			return $buffer;
+		
+		# sanity check on mobile users
+		global $sem_mobile_agents;
+		if ( $mobile_agents != sem_cache::get_mobile_agents() )
+			return $buffer;
+		$sem_mobile_agents = array_map('preg_quote', (array) $sem_mobile_agents);
+		$sem_mobile_agents = implode("|", $sem_mobile_agents);
+		if ( preg_match("{($sem_mobile_agents)}", $_SERVER['HTTP_USER_AGENT']) )
 			return $buffer;
 		
 		if ( self::$static ) {

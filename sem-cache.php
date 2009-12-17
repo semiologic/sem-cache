@@ -170,6 +170,7 @@ class sem_cache {
 		$static_cache = $static_cache ? 'true' : 'false';
 		$memory_cache = $memory_cache ? 'true' : 'false';
 		$sem_cache_cookies = var_export(sem_cache::get_cookies(), true);
+		$sem_mobile_agents = var_export(sem_cache::get_mobile_agents(), true);
 		$sem_cache_file = dirname(__FILE__) . '/static-cache.php';
 		
 		$contents = <<<EOS
@@ -178,6 +179,8 @@ define('static_cache', $static_cache);
 define('memory_cache', $memory_cache);
 
 \$sem_cache_cookies = $sem_cache_cookies;
+
+\$sem_mobile_agents = $sem_mobile_agents;
 
 include '$sem_cache_file';
 ?>
@@ -613,10 +616,15 @@ EOS;
 				$cache_cookies[] = "RewriteCond %{HTTP_COOKIE} !\b$cookie=";
 			$cache_cookies = implode("\n", $cache_cookies);
 			
+			$mobile_agents = self::get_mobile_agents();
+			$mobile_agents = array_map('preg_quote', $mobile_agents);
+			$mobile_agents = implode('|', $mobile_agents);
+			
 			$extra = <<<EOS
 
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond $cache_dir/%{REQUEST_URI}/index.html -f
+RewriteCond %{HTTP_USER_AGENT} !^.+($mobile_agents)
 $cache_cookies
 RewriteCond %{QUERY_STRING} ^$
 RewriteCond %{THE_REQUEST} ^GET
@@ -624,6 +632,7 @@ RewriteRule ^ $cache_url/%{REQUEST_URI}/index.html [L]
 
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond $cache_dir/%{REQUEST_URI} -f
+RewriteCond %{HTTP_USER_AGENT} !^.+($mobile_agents)
 $cache_cookies
 RewriteCond %{QUERY_STRING} ^$
 RewriteCond %{THE_REQUEST} ^GET
@@ -648,6 +657,7 @@ AddOutputFilterByType DEFLATE text/plain
 AddOutputFilterByType DEFLATE text/html
 AddOutputFilterByType DEFLATE text/xml
 AddOutputFilterByType DEFLATE text/css
+AddOutputFilterByType DEFLATE text/javascript
 AddOutputFilterByType DEFLATE application/xml
 AddOutputFilterByType DEFLATE application/xhtml+xml
 AddOutputFilterByType DEFLATE application/rss+xml
@@ -672,6 +682,18 @@ EOS;
 			
 			$rules = $extra . $rules;
 		}
+		
+		$encoding = get_option('blog_charset');
+		if ( !$encoding )
+			$encoding = 'utf-8';
+		
+		$extra = <<<EOS
+
+AddDefaultCharset $encoding
+
+EOS;
+		
+		$rules = $extra . $rules;
 		
 		return $rules;
 	} # rewrite_rules()
@@ -709,6 +731,25 @@ EOS;
 		
 		return apply_filters('sem_cache_cookies', $cookies);
 	} # get_cookies()
+	
+	
+	/**
+	 * get_mobile_agents()
+	 *
+	 * @return array $agents
+	 **/
+
+	function get_mobile_agents() {
+		$agents = array(
+			'iPhone',
+			'iPod',
+			'aspen',
+			'dream',
+			'android',
+			'BlackBerry'
+			);
+		return apply_filters('sem_cache_mobile_agents', $agents);
+	} # get_mobile_agents()
 	
 	
 	/**
