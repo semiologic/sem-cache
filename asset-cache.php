@@ -13,6 +13,11 @@ class asset_cache {
 	 **/
 
 	static function wp_print_styles() {
+		static $done = false;
+		if ( $done )
+			return;
+		
+		$done = true;
 		global $wp_styles;
 		
 		if ( !( $wp_styles instanceof WP_Styles ) )
@@ -96,6 +101,11 @@ class asset_cache {
 	 **/
 
 	static function wp_print_scripts() {
+		static $done = false;
+		if ( $done )
+			return;
+		
+		$done = true;
 		global $wp_scripts;
 		
 		if ( !( $wp_scripts instanceof WP_Scripts ) )
@@ -144,6 +154,11 @@ class asset_cache {
 	 **/
 
 	static function wp_print_footer_scripts() {
+		static $done = false;
+		if ( $done )
+			return;
+		
+		$done = true;
 		global $wp_scripts;
 		
 		if ( !( $wp_scripts instanceof WP_Scripts ) )
