@@ -84,7 +84,6 @@ class object_cache {
 
 	var $cache = array();
 	var $mc = array();
-	var $stats = array();
 	var $group_ops = array();
 
 	var $default_expiration = 0;
@@ -109,7 +108,6 @@ class object_cache {
 		$result = $mc->add($key, $data, false, $expire);
 		
 		if ( false !== $result ) {
-			@ ++$this->stats['add'];
 			$this->group_ops[$group][] = "add $id";
 			$this->cache[$key] = $data;
 		}
@@ -165,7 +163,6 @@ class object_cache {
 
 		$result = $mc->delete($key);
 
-		@ ++$this->stats['delete'];
 		$this->group_ops[$group][] = "delete $id";
 
 		if ( false !== $result )
@@ -278,7 +275,6 @@ class object_cache {
 				$this->cache_misses++;
 		}
 
-		@ ++$this->stats['get'];
 		$this->group_ops[$group][] = "get $id";
 		
 		if ( is_null($value) )
