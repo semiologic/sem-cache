@@ -117,14 +117,96 @@ class sem_cache_admin {
 		
 		screen_icon();
 		
-		global $_wp_using_ext_object_cache;
-		$can_static = sem_cache::can_static();
-		$can_memcached = sem_cache::can_memcached();
-		$can_query = sem_cache::can_query();
-		$can_assets = sem_cache::can_assets();
-		$can_gzip = sem_cache::can_gzip();
-		
 		list($files, $expired) = cache_fs::stats();
+		
+		$static_errors = array();
+		$memory_errors = array();
+		$query_errors = array();
+		$object_errors = array();
+		$assets_errors = array();
+		$gzip_errors = array();
+		
+		if ( !sem_cache::can_memcached() ) {
+			$error = sprintf(__('<a href="%1$s">Memcached</a> is not installed on your server, or the php extension is misconfigured, or the daemon is not running. Note that shared hosts never offer memcached; you need a dedicated server or a VPS such as those offered by <a href="%2$s">Hub</a> to take advantage of it. Also note that there are two PHP extensions, and that only <a href="%1$s">this one</a> is supported.', 'sem-cache'), 'http://www.php.net/manual/en/book.memcache.php', 'http://hub.org');
+			$memory_errors[] = $error;
+			$query_errors[] = $error;
+			$object_errors[] = $error;
+		} elseif ( !sem_cache::can_object() ) {
+			$error = __('WP cannot overwrite the object-cache.php file in your wp-content folder. The file needs to be writable by the server.', 'sem-cache');
+			$memory_errors[] = $error;
+			$query_errors[] = $error;
+			$object_errors[] = $error;
+		}
+		
+		if ( !version_compare(phpversion(), '5.1', '>=') ) {
+			$error = sprintf(__('The Query Cache requires PHP 5.1 or more. Your server is currently running PHP %s. Please contact your host and have them upgrade PHP.', 'sem-cache'), phpversion());
+			$query_errors[] = $error;
+		}
+		
+		if ( ini_get('safe_mode') ) {
+			$error = __('Safe mode is enabled on your server.', 'sem-cache');
+			$static_errors[] = $error;
+			$assets_errors[] = $error;
+		}
+		
+		if ( !( !get_option('permalink_structure') || is_writable(ABSPATH . '.htaccess') ) ) {
+			$error = __('WP cannot overwrite your site\'s .htaccess file to insert new rewrite rules. The file needs to be writable by your server.', 'sem-cache');
+			$static_errors[] = $error;
+		}
+		
+		if ( !is_writable(ABSPATH . '.htaccess') ) {
+			$error = __('WP cannot overwrite your site\'s .htaccess file to insert extra instructions. The file needs to be writable by your server.', 'sem-cache');
+			$gzip_errors[] = $error;
+		}
+		
+		if ( !( defined('WP_CACHE') && WP_CACHE || is_writable(ABSPATH . 'wp-config.php') ) ) {
+			$error = __('WP cannot define a WP_CACHE constant in your site\'s wp-config.php file. It needs to be added manually, or the file needs to be writable by the server.', 'sem-cache');
+			$static_errors[] = $error;
+			$memory_errors[] = $error;
+		}
+		
+		if ( !( !file_exists(WP_CONTENT_DIR . '/advanced-cache.php')
+			|| is_writable(WP_CONTENT_DIR . '/advanced-cache.php') ) ) {
+			$error = __('WP cannot overwrite the advanced-cache.php file in your wp-content folder. The file needs to be writable by the server.', 'sem-cache');
+			$static_errors[] = $error;
+			$memory_errors[] = $error;
+		}
+		
+		if ( !( !file_exists(WP_CONTENT_DIR . '/cache') && is_writable(WP_CONTENT_DIR)
+			|| is_dir(WP_CONTENT_DIR . '/cache') && is_writable(WP_CONTENT_DIR . '/cache') ) ) {
+			$error = __('WP cannot create or write to the cache folder in your site\'s wp-content folder. It or the wp-content folder needs to be writable by the server.', 'sem-cache');
+			$static_errors[] = $error;
+			$assets_errors[] = $error;
+		}
+		
+		if ( !apache_mod_loaded('mod_deflate') ) {
+			$error = __('mod_deflate is required in order to allow Apache to conditionally compress the files it sends. (mod_gzip is not supported because it is too resource hungry.)  Please contact your host so they configure Apache accordingly.', 'sem-cache');
+			$gzip_errors[] = $error;
+		}
+		
+		if ( !apache_mod_loaded('mod_headers') ) {
+			$error = __('mod_headers is required in order to avoid that proxies serve gzipped items to user agents who cannot use them. Please contact your host so they configure Apache accordingly.', 'sem-cache');
+			$gzip_errors[] = $error;
+		}
+		
+		foreach ( array(
+			'static_errors' => __('Filesystem-based static cache errors', 'sem-cache'),
+			'memory_errors' => __('Memcached-based static cache errors', 'sem-cache'),
+			'query_errors' => __('Query cache errors', 'sem-cache'),
+			'object_errors' => __('Object cache errors', 'sem-cache'),
+			'assets_errors' => __('Asset cache errors', 'sem-cache'),
+			'gzip_errors' => __('Gzip cache errors', 'sem-cache'),
+			) as $var => $title ) {
+			if ( !$$var ) {
+				$$var = false;
+			} else {
+				$$var = '<h3>' . $title . '</h3>' . "\n"
+					. '<ul class="ul-square">' . "\n"
+					. '<li>' . implode("</li>\n<li>", $$var)
+					. '</li>' . "\n"
+					. '</ul>' . "\n";
+			}
+		}
 		
 		echo '<h2>' . __('Cache Settings', 'sem-cache') . '</h2>' . "\n";
 		
@@ -166,7 +248,7 @@ class sem_cache_admin {
 			. '<input type="checkbox"'
 				. ' id="static_cache" name="static_cache"'
 				. checked((bool) get_option('static_cache'), true, false)
-				. ( !$can_static
+				. ( $static_errors
 					? ' disabled="disabled"'
 					: ''
 					)
@@ -180,7 +262,7 @@ class sem_cache_admin {
 			. '<input type="checkbox"'
 				. ' id="memory_cache" name="memory_cache"'
 				. checked((bool) get_option('memory_cache'), true, false)
-				. ( !$can_memcached
+				. ( $memory_errors
 					? ' disabled="disabled"'
 					: ''
 					)
@@ -204,6 +286,8 @@ class sem_cache_admin {
 			. '<p>'
 			. __('You\'ll usually want both turned on, in order to get the best of both worlds. The only exception is if your site is hosted on multiple servers: in this case, consider sticking to the memory-based static cache, because of the lag introduced by the filesystem\'s synchronisations from a server to the next.', 'sem-cache')
 			. '</p>'
+			. $static_errors
+			. $memory_errors
 			. '</td>' . "\n"
 			. '</tr>' . "\n";
 		
@@ -217,7 +301,7 @@ class sem_cache_admin {
 			. '<input type="checkbox"'
 				. ' id="query_cache" name="query_cache"'
 				. checked((bool) get_option('query_cache'), true, false)
-				. ( !$can_memcached
+				. ( $query_errors
 					? ' disabled="disabled"'
 					: ''
 					)
@@ -235,6 +319,7 @@ class sem_cache_admin {
 			. '<p>'
 			. __('The query cache\'s refresh policy is similar to that of the memory-based static cache: key queries are flushed whenever you edit posts or pages, or approve new comments. All of the remaining queries expire after 12 hours.', 'sem-cache')
 			. '</p>' . "\n"
+			. $query_errors
 			. '</td>' . "\n"
 			. '</tr>' . "\n";
 		
@@ -248,7 +333,7 @@ class sem_cache_admin {
 			. '<input type="checkbox"'
 				. ' id="object_cache" name="object_cache"'
 				. checked((bool) get_option('object_cache'), true, false)
-				. ( !$can_memcached
+				. ( $object_errors
 					? ' disabled="disabled"'
 					: ''
 					)
@@ -266,6 +351,7 @@ class sem_cache_admin {
 			. '<p>'
 			. __('The object cache is automatically turned on, and cannot be disabled, if you use the memory-based static cache or the query cache.', 'sem-cache')
 			. '</p>' . "\n"
+			. $object_errors
 			. '</td>' . "\n"
 			. '</tr>' . "\n";
 		
@@ -279,7 +365,7 @@ class sem_cache_admin {
 			. '<input type="checkbox"'
 				. ' id="asset_cache" name="asset_cache"'
 				. checked((bool) get_option('asset_cache'), true, false)
-				. ( !$can_assets
+				. ( $assets_errors
 					? ' disabled="disabled"'
 					: ''
 					)
@@ -294,6 +380,7 @@ class sem_cache_admin {
 			. '<p>'
 			. __('This setting should always be turned on, unless you\'re in the process of manually editing these assets.', 'sem-cache')
 			. '</p>' . "\n"
+			. $assets_errors
 			. '</td>' . "\n"
 			. '</tr>' . "\n";
 		
@@ -307,7 +394,7 @@ class sem_cache_admin {
 			. '<input type="checkbox"'
 				. ' id="gzip_cache" name="gzip_cache"'
 				. checked((bool) get_option('gzip_cache'), true, false)
-				. ( !$can_gzip
+				. ( $gzip_errors
 					? ' disabled="disabled"'
 					: ''
 					)
@@ -322,6 +409,7 @@ class sem_cache_admin {
 			. '<p>'
 			. __('This setting should always be turned on, unless you\'re in the process of manually editing files on your site.', 'sem-cache')
 			. '</p>' . "\n"
+			. $gzip_errors
 			. '</td>' . "\n"
 			. '</tr>' . "\n";
 		

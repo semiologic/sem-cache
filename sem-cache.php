@@ -148,7 +148,7 @@ class sem_cache {
 	 **/
 
 	function enable_static() {
-		if ( !self::can_static() && !self::can_memcached() )
+		if ( !self::can_static() && !self::can_memory() )
 			return false;
 		
 		$static_cache = (bool) get_option('static_cache');
@@ -402,7 +402,7 @@ EOS;
 	 **/
 
 	function enable_memcached() {
-		if ( !self::can_memcached() )
+		if ( !self::can_object() )
 			return false;
 		
 		$memory_cache = (bool) get_option('memory_cache');
@@ -410,7 +410,7 @@ EOS;
 		$object_cache = (bool) get_option('object_cache');
 		
 		if ( !$memory_cache && !$query_cache && !$object_cache )
-			return self::disable_gzip();
+			return self::disable_memcached();
 		
 		$sem_cache_file = dirname(__FILE__) . '/object-cache.php';
 		$contents = <<<EOS
@@ -540,6 +540,26 @@ EOS;
 	
 	
 	/**
+	 * can_memory()
+	 *
+	 * @return bool $can_memory
+	 **/
+
+	function can_memory() {
+		static $can_memory;
+		if ( isset($can_memory) )
+			return $can_memory;
+		
+		$can_memory = self::can_object()
+			&& ( defined('WP_CACHE') && WP_CACHE || is_writable(ABSPATH . 'wp-config.php') )
+			&& ( !file_exists(WP_CONTENT_DIR . '/advanced-cache.php')
+				|| is_writable(WP_CONTENT_DIR . '/advanced-cache.php') );
+		
+		return $can_memory;
+	} # can_memory()
+	
+	
+	/**
 	 * can_query()
 	 *
 	 * @return bool $can_query
@@ -550,11 +570,30 @@ EOS;
 		if ( isset($can_query) )
 			return $can_query;
 		
-		$can_query = self::can_memcached()
+		$can_query = self::can_object()
 			&& version_compare(phpversion(), '5.1', '>=');
 		
 		return $can_query;
 	} # can_query()
+	
+	
+	/**
+	 * can_object()
+	 *
+	 * @return bool $can_object
+	 **/
+
+	function can_object() {
+		static $can_object;
+		if ( isset($can_object) )
+			return $can_object;
+		
+		$can_object = self::can_memcached()
+			&& ( !file_exists(WP_CONTENT_DIR . '/object-cache.php')
+				|| is_writable(WP_CONTENT_DIR . '/object-cache.php') );
+		
+		return $can_object;
+	} # can_object()
 	
 	
 	/**
