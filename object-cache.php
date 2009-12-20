@@ -175,14 +175,89 @@ class object_cache {
 	}
 
 	function flush() {
-		# do not flush anything if the session handler is memcached
-		if ( ini_get('session.save_handler') === 'memcache' )
+		static $done = false;
+		if ( $done )
 			return false;
 		
-		$ret = true;
-		foreach ( array_keys($this->mc) as $group )
-			$ret &= $this->mc[$group]->flush();
-		return $ret;
+		# can't flush if WP isn't loaded
+		if ( !function_exists('get_option') )
+			return false;
+		
+		$done = true;
+		global $wpdb;
+		
+		# flush and warm up posts
+		$posts = $wpdb->get_results("SELECT * FROM $wpdb->posts WHERE post_status IN ('publish', 'private') OR post_type = 'attachment'");
+		
+		$post_ids = array();
+		foreach ( $posts as $post ) {
+			$post_ids[] = $post->ID;
+			$this->delete($post->ID, 'posts');
+			$this->delete($post->ID, 'post_meta');
+			clean_object_term_cache($post->ID, 'post');
+			do_action('clean_post_cache', $post->ID);
+			$this->add($post->ID, $post, 'posts');
+		}
+		
+		unset($posts);
+		
+		$cache = array();
+		$meta_list = $wpdb->get_results("SELECT post_id, meta_key, meta_value FROM $wpdb->postmeta JOIN $wpdb->posts ON $wpdb->posts.ID = $wpdb->postmeta.post_id WHERE $wpdb->posts.post_status IN ('publish', 'private') OR $wpdb->posts.post_type = 'attachment';", ARRAY_A);
+		
+		foreach ( (array) $meta_list as $metarow) {
+			$mpid = (int) $metarow['post_id'];
+			$mkey = $metarow['meta_key'];
+			$mval = $metarow['meta_value'];
+
+			// Force subkeys to be array type:
+			if ( !isset($cache[$mpid]) || !is_array($cache[$mpid]) )
+				$cache[$mpid] = array();
+			if ( !isset($cache[$mpid][$mkey]) || !is_array($cache[$mpid][$mkey]) )
+				$cache[$mpid][$mkey] = array();
+
+			// Add a value to the current pid/key:
+			$cache[$mpid][$mkey][] = $mval;
+		}
+		
+		foreach ( $post_ids as $post_id ) {
+			if ( !isset($cache[$post_id]) )
+				$cache[$post_id] = array();
+			$this->set($post_id, $cache[$post_id], 'post_meta');
+		}
+		
+		unset($cache, $meta_list);
+		
+		# flush and warm up terms
+		$terms = $wpdb->get_results("SELECT term_id, taxonomy FROM $wpdb->term_taxonomy");
+		$taxonomies = array();
+		$term_ids = array();
+		foreach ( (array) $terms as $term ) {
+			$taxonomies[] = $term->taxonomy;
+			$term_ids[] = $term->term_id;
+			$this->delete($term->term_id, $term->taxonomy);
+		}
+		$taxonomies = array_unique($taxonomies);
+		
+		foreach ( $taxonomies as $taxonomy ) {
+			$this->delete('all_ids', $taxonomy);
+			$this->delete('get', $taxonomy);
+			delete_option("{$taxonomy}_children");
+			do_action('clean_term_cache', $term_ids, $taxonomy);
+		}
+		
+		$this->set('last_changed', time(), 'terms');
+		
+		$terms = $wpdb->get_results("SELECT t.*, tt.* FROM $wpdb->terms as t JOIN $wpdb->term_taxonomy as tt ON t.term_id = tt.term_id AND taxonomy = 'category' AND count > 0");
+		foreach ( $terms as $term )
+			$this->set($term->term_id, $term, $term->taxonomy);
+		
+		# users and options don't need to be flushed, nor do front-end items such as widgets
+		
+		# we can now flush get_permalink() intensive stuff
+		foreach ( $post_ids as $post_id )
+			sem_cache::flush_post($post_id);
+		
+		return true;
 	}
 
 	function get($id, $group = 'default') {

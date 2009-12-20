@@ -26,7 +26,8 @@ class sem_cache_admin {
 		case 'flush':
 			sem_cache::flush_assets($timeout);
 			sem_cache::flush_static($timeout);
-			sem_cache::flush_objects($timeout);
+			if ( !get_option('memory_cache') )
+				sem_cache::flush_objects($timeout);
 			
 			echo '<div class="updated fade">' . "\n"
 				. '<p>'
