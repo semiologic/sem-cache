@@ -788,10 +788,6 @@ EOS;
 	 **/
 
 	function flush_objects() {
-		# do not flush anything if the session handler is memcached
-		if ( ini_get('session.save_handler') === 'memcache' )
-			return;
-		
 		$vars = array(
 			'update_core',
 			'update_plugins',
@@ -970,7 +966,7 @@ EOS;
 		
 		$old = wp_cache_get($post_id, 'pre_flush_post');
 		
-		if ( $post->post_status != 'publish' && ( !$old || $old['post_status'] != 'publish' ) )
+		if ( $post->post_status != 'publish' && ( !$old || $old['post_status'] != 'publish' ) && $post->post_type != 'attachment' )
 			return;
 		
 		# flush the post
