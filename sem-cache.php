@@ -625,8 +625,16 @@ EOS;
 		if ( isset($can_gzip) )
 			return $can_gzip;
 		
-		$can_gzip = apache_mod_loaded('mod_deflate') && apache_mod_loaded('mod_headers')
-			&& is_writable(ABSPATH . '.htaccess');
+		if ( function_exists('apache_get_modules') ) {
+			$mods = apache_get_modules();
+			if ( in_array('mod_deflate', $mods) && in_array('mod_headers', $mods) )
+				$can_gzip = true;
+		} else {
+			# just assume it works
+			$can_gzip = true;
+		}
+		
+		$can_gzip &= is_writable(ABSPATH . '.htaccess');
 		
 		return $can_gzip;
 	} # can_gzip()

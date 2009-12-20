@@ -125,6 +125,7 @@ class sem_cache_admin {
 		$object_errors = array();
 		$assets_errors = array();
 		$gzip_errors = array();
+		$gzip_notice = array();
 		
 		if ( !sem_cache::can_memcached() ) {
 			$error = sprintf(__('<a href="%1$s">Memcached</a> is not installed on your server, or the php extension is misconfigured, or the daemon is not running. Note that shared hosts never offer memcached; you need a dedicated server or a VPS such as those offered by <a href="%2$s">Hub</a> to take advantage of it. Also note that there are two PHP extensions, and that only <a href="%1$s">this one</a> is supported.', 'sem-cache'), 'http://www.php.net/manual/en/book.memcache.php', 'http://hub.org');
@@ -179,14 +180,19 @@ class sem_cache_admin {
 			$assets_errors[] = $error;
 		}
 		
-		if ( !apache_mod_loaded('mod_deflate') ) {
-			$error = __('mod_deflate is required in order to allow Apache to conditionally compress the files it sends. (mod_gzip is not supported because it is too resource hungry.)  Please contact your host so they configure Apache accordingly.', 'sem-cache');
-			$gzip_errors[] = $error;
-		}
-		
-		if ( !apache_mod_loaded('mod_headers') ) {
-			$error = __('mod_headers is required in order to avoid that proxies serve gzipped items to user agents who cannot use them. Please contact your host so they configure Apache accordingly.', 'sem-cache');
-			$gzip_errors[] = $error;
+		if ( function_exists('apache_get_modules') ) {
+			if ( !apache_mod_loaded('mod_deflate') ) {
+				$error = __('mod_deflate is required in order to allow Apache to conditionally compress the files it sends. (mod_gzip is not supported because it is too resource hungry.)  Please contact your host so they configure Apache accordingly.', 'sem-cache');
+				$gzip_errors[] = $error;
+			}
+
+			if ( !apache_mod_loaded('mod_headers') ) {
+				$error = __('mod_headers is required in order to avoid that proxies serve gzipped items to user agents who cannot use them. Please contact your host so they configure Apache accordingly.', 'sem-cache');
+				$gzip_errors[] = $error;
+			}
+		} else {
+			# just assume it works
+			$gzip_notice[] = __('gzip caching requires mod_deflate and mod_headers, but the Semiologic Cache plugin cannot determine whether they are installed on your server. Please check with your host.', 'sem-cache');
 		}
 		
 		foreach ( array(
@@ -196,6 +202,7 @@ class sem_cache_admin {
 			'object_errors' => __('Object cache errors', 'sem-cache'),
 			'assets_errors' => __('Asset cache errors', 'sem-cache'),
 			'gzip_errors' => __('Gzip cache errors', 'sem-cache'),
+			'gzip_notice' => __('Gzip cache notice', 'sem-cache'),
 			) as $var => $title ) {
 			if ( !$$var ) {
 				$$var = false;
@@ -410,6 +417,7 @@ class sem_cache_admin {
 			. __('This setting should always be turned on, unless you\'re in the process of manually editing files on your site.', 'sem-cache')
 			. '</p>' . "\n"
 			. $gzip_errors
+			. $gzip_notice
 			. '</td>' . "\n"
 			. '</tr>' . "\n";
 		
