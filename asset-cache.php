@@ -188,6 +188,7 @@ class asset_cache {
 		if ( $redo ) {
 			$todo = array_diff($todo, $redo);
 			$wp_scripts->done = array_diff($wp_scripts->done, $redo);
+			$wp_scripts->in_footer = array_merge($wp_scripts->in_footer, $redo);
 		}
 		
 		if ( $todo ) {
