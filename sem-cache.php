@@ -447,8 +447,8 @@ EOS;
 		update_option('query_cache', 0);
 		update_option('object_cache', 0);
 		
-		if ( file_exists(WP_CONTENT_DIR . '/advanced-cache.php')
-			&& !unlink(WP_CONTENT_DIR . '/advanced-cache.php') ) {
+		if ( file_exists(WP_CONTENT_DIR . '/object-cache.php')
+			&& !unlink(WP_CONTENT_DIR . '/object-cache.php') ) {
 			echo '<div class="error">'
 				. '<p>'
 				. sprintf(__('Error: Failed to delete %s.', 'sem-cache'), 'wp-content/advanced-cache.php')
