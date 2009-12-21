@@ -114,6 +114,13 @@ class asset_cache {
 		$done = $wp_scripts->done;
 		$wp_scripts->do_concat = true;
 		$todo = array_diff($wp_scripts->do_head_items(), $done);
+		if ( $wp_scripts->print_code ) {
+			echo "<script type='text/javascript'>\n";
+			echo "/* <![CDATA[ */\n";
+			echo $wp_scripts->print_code;
+			echo "/* ]]> */\n";
+			echo "</script>\n";
+		}
 		$wp_scripts->reset();
 		
 		if ( !$todo )
@@ -128,7 +135,6 @@ class asset_cache {
 				&& preg_match("{^$site_url}i", $wp_scripts->registered[$handle]->src)
 				&& preg_match("/\.js$/i", $wp_scripts->registered[$handle]->src) ) {
 				$js[$handle] = $wp_scripts->registered[$handle]->ver;
-				$wp_scripts->print_scripts_l10n($handle);
 			} else {
 				$redo[] = $handle;
 			}
@@ -169,6 +175,13 @@ class asset_cache {
 		$done = $wp_scripts->done;
 		$wp_scripts->do_concat = true;
 		$todo = array_diff($wp_scripts->do_footer_items(), $done);
+		if ( $wp_scripts->print_code ) {
+			echo "<script type='text/javascript'>\n";
+			echo "/* <![CDATA[ */\n";
+			echo $wp_scripts->print_code;
+			echo "/* ]]> */\n";
+			echo "</script>\n";
+		}
 		$wp_scripts->reset();
 		
 		if ( !$todo )
@@ -183,7 +196,6 @@ class asset_cache {
 				&& preg_match("{^$site_url}i", $wp_scripts->registered[$handle]->src)
 				&& preg_match("/\.js$/i", $wp_scripts->registered[$handle]->src) ) {
 				$js[$handle] = $wp_scripts->registered[$handle]->ver;
-				$wp_scripts->print_scripts_l10n($handle);
 			} else {
 				$redo[] = $handle;
 			}
