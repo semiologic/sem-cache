@@ -124,7 +124,8 @@ class asset_cache {
 		$js = array();
 		
 		foreach ( $todo as $handle ) {
-			if ( preg_match("{^$site_url}i", $wp_scripts->registered[$handle]->src)
+			if ( empty($wp_scripts->registered[$handle]->args)
+				&& preg_match("{^$site_url}i", $wp_scripts->registered[$handle]->src)
 				&& preg_match("/\.js$/i", $wp_scripts->registered[$handle]->src) ) {
 				$js[$handle] = $wp_scripts->registered[$handle]->ver;
 				$wp_scripts->print_scripts_l10n($handle);
@@ -178,7 +179,8 @@ class asset_cache {
 		$js = array();
 		
 		foreach ( $todo as $handle ) {
-			if ( preg_match("{^$site_url}i", $wp_scripts->registered[$handle]->src)
+			if ( empty($wp_scripts->registered[$handle]->args)
+				&& preg_match("{^$site_url}i", $wp_scripts->registered[$handle]->src)
 				&& preg_match("/\.js$/i", $wp_scripts->registered[$handle]->src) ) {
 				$js[$handle] = $wp_scripts->registered[$handle]->ver;
 				$wp_scripts->print_scripts_l10n($handle);
