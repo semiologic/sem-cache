@@ -471,7 +471,7 @@ EOS;
 		if ( isset($can_static) )
 			return $can_static;
 		
-		$can_static = !ini_get('safe_mode')
+		$can_static = !ini_get('safe_mode') && !ini_get('open_basedir')
 			&& ( !get_option('permalink_structure') || is_writable(ABSPATH . '.htaccess') )
 			&& ( defined('WP_CACHE') && WP_CACHE || is_writable(ABSPATH . 'wp-config.php') )
 			&& ( !file_exists(WP_CONTENT_DIR . '/advanced-cache.php')
@@ -607,7 +607,8 @@ EOS;
 		if ( isset($can_assets) )
 			return $can_assets;
 		
-		$can_assets = ( !file_exists(WP_CONTENT_DIR . '/cache') && is_writable(WP_CONTENT_DIR)
+		$can_assets = !@ini_get('safe_mode') && !@ini_get('open_basedir')
+			&& ( !file_exists(WP_CONTENT_DIR . '/cache') && is_writable(WP_CONTENT_DIR)
 				|| is_dir(WP_CONTENT_DIR . '/cache') && is_writable(WP_CONTENT_DIR . '/cache') );
 		
 		return $can_assets;

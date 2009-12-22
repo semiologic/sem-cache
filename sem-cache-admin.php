@@ -144,8 +144,8 @@ class sem_cache_admin {
 			$query_errors[] = $error;
 		}
 		
-		if ( ini_get('safe_mode') ) {
-			$error = __('Safe mode is enabled on your server.', 'sem-cache');
+		if ( @ini_get('safe_mode') || @ini_get('open_basedir') ) {
+			$error = __('Safe mode or an open_basedir restriction is enabled on your server.', 'sem-cache');
 			$static_errors[] = $error;
 			$assets_errors[] = $error;
 		}
