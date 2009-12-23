@@ -42,13 +42,9 @@ foreach ( array(
 foreach ( array(
 	'static_cache',
 	'memory_cache',
-	'query_cache',
-	'object_cache',
-	'asset_cache',
-	'gzip_cache',
 	) as $const ) {
 	if ( !defined($const) )
-		define($const, (bool) get_option($const));
+		define($const, get_option($const) && defined('WP_CACHE') && WP_CACHE);
 }
 
 if ( !defined('cache_timeout') )
@@ -88,7 +84,6 @@ class sem_cache {
 				. '</a>'
 			. '</span>'
 			. ' ';
-		
 	} # front_menu()
 	
 	
@@ -323,10 +318,10 @@ EOS;
 
 	function flush_url($link) {
 		$cache_id = md5($link);
-		if ( query_cache ) {
-			wp_cache_delete($cache_id, 'url2posts');
-			wp_cache_delete($cache_id, 'url2posts_found');
-		}
+		
+		wp_cache_delete($cache_id, 'url2posts');
+		wp_cache_delete($cache_id, 'url2posts_found');
+		
 		if ( static_cache ) {
 			static $permalink_structure;
 			if ( !isset($permalink_structure) )
@@ -412,9 +407,9 @@ EOS;
 
 	function flush_post_url($link) {
 		$cache_id = md5($link);
-		if ( query_cache ) {
-			wp_cache_delete($cache_id, 'url2post_id');
-		}
+		
+		wp_cache_delete($cache_id, 'url2post_id');
+		
 		if ( static_cache ) {
 			static $permalink_structure;
 			if ( !isset($permalink_structure) )
@@ -730,7 +725,7 @@ EOS;
 		
 		global $wpdb;
 		$queries = get_num_queries();
-		if ( query_cache && !is_admin() ) {
+		if ( get_option('query_cache') && !is_admin() ) {
 			$queries += $wpdb->cache_hits;
 			$stats .= " Query Cache: $wpdb->cache_hits hits / $queries.";
 		} else {
@@ -788,22 +783,20 @@ if ( !class_exists('cache_fs') )
 	include dirname(__FILE__) . '/cache-fs.php';
 
 if ( !is_admin() ) {
-	if ( query_cache )
+	if ( get_option('query_cache') )
 		include dirname(__FILE__) . '/query-cache.php';
 
-	if ( asset_cache )
+	if ( get_option('asset_cache') )
 		include dirname(__FILE__) . '/asset-cache.php';
 }
 
-if ( static_cache ) {
+if ( class_exists('static_cache') ) {
 	add_action('cache_timeout', array('sem_cache', 'cache_timeout'));
 	if ( !wp_next_scheduled('cache_timeout') )
 		wp_schedule_event(time(), 'hourly', 'cache_timeout');
 	if ( sem_cache_debug && ( wp_next_scheduled('cache_timeout') - time() > cache_timeout ) )
 		wp_schedule_single_event(time() + cache_timeout, 'cache_timeout');
-}
-
-if ( class_exists('static_cache') ) {
+	
 	add_filter('status_header', array('static_cache', 'status_header'), 100, 2);
 	add_filter('nocache_headers', array('static_cache', 'disable'));
 }
@@ -823,7 +816,7 @@ function sem_cache_admin() {
 foreach ( array('load-settings_page_sem-cache') as $hook )
 	add_action($hook, 'sem_cache_admin');
 
-if ( static_cache || memory_cache || query_cache ) :
+if ( static_cache || memory_cache || get_option('query_cache') ) :
 
 add_action('pre_post_update', array('sem_cache', 'pre_flush_post'));
 

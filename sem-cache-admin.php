@@ -43,7 +43,6 @@ class sem_cache_admin {
 			self::disable_memcached();
 			self::disable_assets();
 			self::disable_gzip();
-			sem_cache::flush_objects();
 			
 			echo '<div class="updated fade">' . "\n"
 				. '<p>'
@@ -90,7 +89,6 @@ class sem_cache_admin {
 			self::enable_memcached();
 			self::enable_assets();
 			self::enable_gzip();
-			sem_cache::flush_objects();
 			
 			echo '<div class="updated fade">' . "\n"
 				. '<p>'
@@ -100,6 +98,11 @@ class sem_cache_admin {
 				. '</p>' . "\n"
 				. '</div>' . "\n";
 			break;
+		}
+		
+		if ( !get_option('object_cache') && class_exists('object_cache') ) {
+			# do a hard object flush
+			sem_cache::flush_objects();
 		}
 		
 		if ( file_exists(WP_CONTENT_DIR . '/cache/wp_cache_mutex.lock') )
@@ -116,7 +119,7 @@ class sem_cache_admin {
 	function edit_options() {
 		echo '<div class="wrap">' . "\n"
 			. '<form method="post" action="">';
-
+		
 		wp_nonce_field('sem_cache');
 		
 		screen_icon();
@@ -933,8 +936,6 @@ EOS;
 				. '</p>'
 				. '</div>' . "\n";
 		}
-		
-		sem_cache::flush_objects();
 	} # disable_memcached()
 } # sem_cache_admin
 

@@ -26,8 +26,8 @@ if ( memory_cache && !class_exists('object_cache') )
 class static_cache {
 	private static $status_code = 200;
 	private static $status_header;
-	private static $memory = memory_cache;
 	private static $static = static_cache;
+	private static $memory = memory_cache;
 	private static $nocache = false;
 	private static $started = false;
 	private static $host;

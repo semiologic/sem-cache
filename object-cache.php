@@ -86,11 +86,13 @@ class object_cache {
 	var $mc = array();
 
 	var $default_expiration = 0;
+	
+	var $flush = false;
 
 	function add($id, $data, $group = 'default', $expire = 0) {
 		$key = $this->key($id, $group);
 		
-		if ( in_array($group, $this->no_mc_groups) ) {
+		if ( in_array($group, $this->no_mc_groups) || $this->flush ) {
 			$this->cache[$key] = $data;
 			return true;
 		} elseif ( isset($this->cache[$key]) && $this->cache[$key] !== false ) {
@@ -177,13 +179,18 @@ class object_cache {
 		
 		$done = true;
 		global $wpdb;
+		$this->flush = true;
 		
 		# flush posts
 		$posts = $wpdb->get_results("SELECT ID, post_title, post_name, post_date, post_type, post_status, post_author FROM $wpdb->posts WHERE post_status IN ('publish', 'private') OR post_type = 'attachment'");
 		
-		# force a widget flush
-		if ( $post = current($posts) )
-			do_action('save_post', $post->ID, $post);
+		# force WP widgets to flush
+		wp_cache_delete('widget_recent_posts', 'widget');
+		wp_cache_delete('recent_comments', 'widget');
+		wp_cache_delete('get_calendar', 'calendar');
+		wp_cache_delete('wp_get_archives', 'general');
+		wp_cache_delete('all_page_ids', 'posts');
+		wp_cache_delete('get_pages', 'posts');
 		
 		$post_ids = array();
 		foreach ( $posts as $post ) {
@@ -231,7 +238,7 @@ class object_cache {
 			do_action('clean_term_cache', $term_ids, $taxonomy);
 		}
 		
-		$this->set('last_changed', time(), 'terms');
+		$this->delete('last_changed', 'terms');
 		
 		unset($terms);
 		
@@ -271,6 +278,7 @@ class object_cache {
 			}
 		}
 		$this->delete('notoptions', 'options');
+		$this->delete('alloptions', 'options');
 		
 		unset($options);
 		
@@ -332,7 +340,7 @@ class object_cache {
 
 	function replace($id, $data, $group = 'default', $expire = 0) {
 		$key = $this->key($id, $group);
-		if ( in_array($group, $this->no_mc_groups) ) {
+		if ( in_array($group, $this->no_mc_groups) || $this->flush ) {
 			$this->cache[$key] = $data;
 			return true;
 		}
@@ -350,7 +358,7 @@ class object_cache {
 			return false;
 		$this->cache[$key] = $data;
 
-		if ( in_array($group, $this->no_mc_groups) )
+		if ( in_array($group, $this->no_mc_groups) || $this->flush )
 			return true;
 
 		$expire = ($expire == 0) ? $this->default_expiration : $expire;
@@ -382,7 +390,7 @@ class object_cache {
 		if ( is_int(key($buckets)) )
 			$buckets = array('default' => $buckets);
 		
-		foreach ( $buckets as $bucket => $servers) {
+		foreach ( $buckets as $bucket => $servers ) {
 			$this->mc[$bucket] = new Memcache();
 			foreach ( $servers as $server  ) {
 				list ( $node, $port ) = explode(':', $server);
