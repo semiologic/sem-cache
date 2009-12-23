@@ -9,8 +9,8 @@ class query_cache {
 	public $cache_hits = 0;
 	
 	protected static $wpdb;
-	protected static $request = false;
-	protected static $found = false;
+	protected static $request;
+	protected static $found;
 	protected static $cache_id;
 	
 	
@@ -316,7 +316,7 @@ class query_cache {
 		global $wp_the_query;
 		$results = false;
 		
-		if ( $wp_query !== $wp_the_query ) {
+		if ( $wp_query !== $wp_the_query || $query != self::$request ) {
 			# do nothing: it's not reliably cacheable
 			return $results;
 		} elseif ( $wp_query->is_singular ) {
@@ -401,7 +401,7 @@ class query_cache {
 			}
 		}
 		
-		if ( $wp_query === $wp_the_query ) {
+		if ( $wp_query === $wp_the_query && !isset(self::$request) ) {
 			self::$request = $posts_request;
 			self::$found = false;
 		}
@@ -458,7 +458,7 @@ class query_cache {
 		if ( $wp_query->is_preview || isset($_GET['trashed']) )
 			return $num_posts;
 		
-		if ( $wp_query === $wp_the_query ) {
+		if ( $wp_query === $wp_the_query && self::$request == $posts_request ) {
 			self::$request = false;
 			self::$found = false;
 		}
