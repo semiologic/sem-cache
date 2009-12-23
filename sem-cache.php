@@ -43,6 +43,7 @@ foreach ( array(
 	'static_cache',
 	'memory_cache',
 	'query_cache',
+	'object_cache',
 	'asset_cache',
 	'gzip_cache',
 	) as $const ) {
@@ -92,553 +93,24 @@ class sem_cache {
 	
 	
 	/**
-	 * activate()
-	 *
-	 * @return void
-	 **/
-
-	static function activate() {
-		foreach ( array(
-			'static_cache',
-			'memory_cache',
-			'query_cache',
-			'asset_cache',
-			'gzip_cache',
-			) as $ops )
-			add_option($ops, '0');
-
-		self::disable();
-	} # activate()
-	
-	
-	/**
-	 * deactivate()
-	 *
-	 * @return void
-	 **/
-
-	static function deactivate() {
-		self::disable();
-	} # deactivate()
-	
-	
-	/**
 	 * disable()
 	 *
 	 * @return void
 	 **/
 
 	static function disable() {
-		self::disable_static();
-		self::disable_memcached();
-		self::disable_assets();
-		self::disable_gzip();
+		if ( !class_exists('sem_cache_admin') )
+			include dirname(__FILE__) . '/sem-cache-admin.php';
 		
-		if ( file_exists(WP_CONTENT_DIR . '/cache') )
-			@cache_fs::flush(WP_CONTENT_DIR . '/cache');
+		sem_cache_admin::disable_static();
+		sem_cache_admin::disable_memcached();
+		sem_cache_admin::disable_assets();
+		sem_cache_admin::disable_gzip();
+		
+		cache_fs::flush('/');
 		
 		self::flush_objects();
 	} # disable()
-	
-	
-	/**
-	 * enable_static()
-	 *
-	 * @return bool $success
-	 **/
-
-	function enable_static() {
-		if ( !self::can_static() && !self::can_memory() )
-			return false;
-		
-		$static_cache = (bool) get_option('static_cache');
-		$memory_cache = (bool) get_option('memory_cache');
-		
-		# sanity check
-		if ( !$static_cache && !$memory_cache )
-			return self::disable_static();
-		
-		if ( !wp_mkdir_p(WP_CONTENT_DIR . '/cache') ) {
-			echo '<div class="error">'
-				. '<p>'
-				. sprintf(__('Error: Failed to create %s.', 'sem-cache'), 'wp-content/cache')
-				. '</p>'
-				. '</div>' . "\n";
-			return false;
-		}
-		
-		$static_cache = $static_cache ? 'true' : 'false';
-		$memory_cache = $memory_cache ? 'true' : 'false';
-		$sem_cache_cookies = var_export(sem_cache::get_cookies(), true);
-		$sem_mobile_agents = var_export(sem_cache::get_mobile_agents(), true);
-		$sem_cache_file = dirname(__FILE__) . '/static-cache.php';
-		
-		$contents = <<<EOS
-<?php
-define('static_cache', $static_cache);
-define('memory_cache', $memory_cache);
-
-\$sem_cache_cookies = $sem_cache_cookies;
-
-\$sem_mobile_agents = $sem_mobile_agents;
-
-include '$sem_cache_file';
-?>
-EOS;
-		
-		$file = WP_CONTENT_DIR . '/advanced-cache.php';
-		$perms = stat(WP_CONTENT_DIR);
-		$perms = $perms['mode'] & 0000666;
-		
-		if ( !file_put_contents($file, $contents) || !chmod($file, $perms) ) {
-			echo '<div class="error">'
-				. '<p>'
-				. sprintf(__('Error: Failed to write %s.', 'sem-cache'), 'wp-content/advanced-cache.php')
-				. '</p>'
-				. '</div>' . "\n";
-			return false;
-		}
-		
-		# Enable the static cache
-		if ( !function_exists('save_mod_rewrite_rules') || !function_exists('get_home_path') )
-			include_once ABSPATH . 'wp-admin/includes/admin.php';
-		
-		if ( !isset($GLOBALS['wp_rewrite']) ) $GLOBALS['wp_rewrite'] = new WP_Rewrite;
-		
-		# prevent mass-flushing when the permalink structure hasn't changed
-		remove_action('generate_rewrite_rules', array('sem_cache', 'flush_cache'));
-		
-		global $wp_rewrite;
-		$wp_rewrite->flush_rules();
-		
-		# Enable the memory cache
-		if ( $memory_cache && !self::enable_memcached() )
-			return false;			
-		
-		# Enable the cache
-		$file = ABSPATH . 'wp-config.php';
-		if ( !defined('WP_CACHE') || !WP_CACHE ) {
-			$contents = file_get_contents($file);
-			$line = "define('WP_CACHE', true);";
-			if ( defined('WP_CACHE') ) {
-				$contents = preg_replace("/
-					(?!(?:\/\/|\#)\s*)
-					define\s*\(\s*
-						(['\"])WP_CACHE\\1
-						.*?;
-					/x",
-					$line,
-					$contents);
-			} else {
-				$contents = preg_replace(
-					"/^<\?php\s*/",
-					"<?php" . PHP_EOL . $line . PHP_EOL,
-					$contents);
-			}
-			
-			if ( !$contents || !file_put_contents($file, $contents) ) {
-				echo '<div class="error">'
-					. '<p>'
-					. __('Error: Failed to override the WP_CACHE define in wp-config.php.', 'sem-cache')
-					. '</p>'
-					. '</div>' . "\n";
-				return false;
-			}
-		}
-		
-		return true;
-	} # enable_static()
-	
-	
-	/**
-	 * disable_static()
-	 *
-	 * @return void
-	 **/
-
-	function disable_static() {
-		update_option('static_cache', 0);
-		update_option('memory_cache', 0);
-		
-		# Prevent WP from adding new pages
-		$file = ABSPATH . 'wp-config.php';
-		if ( defined('WP_CACHE') ) {
-			$contents = file_get_contents($file);
-			$contents = preg_replace("/
-				(?!(?:\/\/|\#)\s*)
-				define\s*\(\s*
-					(['\"])WP_CACHE\\1
-					.*?;
-					\s*
-				/x",
-				PHP_EOL,
-				$contents);
-			
-			if ( !$contents || !file_put_contents($file, $contents) ) {
-				echo '<div class="error">'
-					. '<p>'
-					. __('Error: Failed to override the WP_CACHE define in wp-config.php.', 'sem-cache')
-					. '</p>'
-					. '</div>' . "\n";
-			}
-		}
-		
-		if ( file_exists(WP_CONTENT_DIR . '/advanced-cache.php')
-			&& !unlink(WP_CONTENT_DIR . '/advanced-cache.php') ) {
-			echo '<div class="error">'
-				. '<p>'
-				. sprintf(__('Error: Failed to delete %s.', 'sem-cache'), 'wp-content/advanced-cache.php')
-				. '</p>'
-				. '</div>' . "\n";
-		}
-		
-		# Prevent WP from serving cached pages
-		if ( !function_exists('save_mod_rewrite_rules') || !function_exists('get_home_path') )
-			include_once ABSPATH . 'wp-admin/includes/admin.php';
-		
-		if ( !isset($GLOBALS['wp_rewrite']) ) $GLOBALS['wp_rewrite'] = new WP_Rewrite;
-		
-		# prevent mass-flushing when the permalink structure hasn't changed
-		remove_action('generate_rewrite_rules', array('sem_cache', 'flush_cache'));
-		
-		global $wp_rewrite;
-		$wp_rewrite->flush_rules();
-		
-		# Flush the cache
-		self::flush_static();
-	} # disable_static()
-	
-	
-	/**
-	 * enable_assets()
-	 *
-	 * @return bool $success
-	 **/
-
-	function enable_assets() {
-		if ( !self::can_assets() )
-			return false;
-		
-		$asset_cache = (bool) get_option('asset_cache');
-		
-		if ( !$asset_cache )
-			return self::disable_assets();
-		
-		return wp_mkdir_p(WP_CONTENT_DIR . '/cache/assets');
-	} # enable_assets()
-	
-	
-	/**
-	 * disable_assets()
-	 *
-	 * @return vodi
-	 **/
-
-	function disable_assets() {
-		update_option('asset_cache', 0);
-		
-		self::flush_assets();
-	} # disable_assets()
-	
-	
-	/**
-	 * enable_gzip()
-	 *
-	 * @return bool $success
-	 **/
-
-	function enable_gzip() {
-		if ( !self::can_gzip() )
-			return false;
-		
-		$gzip_cache = (bool) get_option('gzip_cache');
-		
-		if ( !$gzip_cache )
-			return self::disable_gzip();
-		
-		# Enable rewrite rules
-		if ( !function_exists('save_mod_rewrite_rules') || !function_exists('get_home_path') )
-			include_once ABSPATH . 'wp-admin/includes/admin.php';
-		
-		if ( !isset($GLOBALS['wp_rewrite']) ) $GLOBALS['wp_rewrite'] = new WP_Rewrite;
-		
-		# prevent mass-flushing when the permalink structure hasn't changed
-		remove_action('generate_rewrite_rules', array('sem_cache', 'flush_cache'));
-		
-		global $wp_rewrite;
-		$wp_rewrite->flush_rules();
-		
-		return true;
-	} # enable_gzip()
-	
-	
-	/**
-	 * disable_gzip()
-	 *
-	 * @return void
-	 **/
-
-	function disable_gzip() {
-		update_option('gzip_cache', 0);
-		
-		# Enable rewrite rules
-		if ( !function_exists('save_mod_rewrite_rules') || !function_exists('get_home_path') )
-			include_once ABSPATH . 'wp-admin/includes/admin.php';
-		
-		if ( !isset($GLOBALS['wp_rewrite']) ) $GLOBALS['wp_rewrite'] = new WP_Rewrite;
-		
-		# prevent mass-flushing when the permalink structure hasn't changed
-		remove_action('generate_rewrite_rules', array('sem_cache', 'flush_cache'));
-		
-		global $wp_rewrite;
-		$wp_rewrite->flush_rules();
-	} # disable_gzip()
-	
-	
-	/**
-	 * enable_memcached()
-	 *
-	 * @return bool $success
-	 **/
-
-	function enable_memcached() {
-		if ( !self::can_object() )
-			return false;
-		
-		$memory_cache = (bool) get_option('memory_cache');
-		$query_cache = (bool) get_option('query_cache');
-		$object_cache = (bool) get_option('object_cache');
-		
-		if ( !$memory_cache && !$query_cache && !$object_cache )
-			return self::disable_memcached();
-		
-		$sem_cache_file = dirname(__FILE__) . '/object-cache.php';
-		$contents = <<<EOS
-<?php
-include_once '$sem_cache_file';
-?>
-EOS;
-		
-		$file = WP_CONTENT_DIR . '/object-cache.php';
-		$perms = stat(WP_CONTENT_DIR);
-		$perms = $perms['mode'] & 0000666;
-		
-		if ( !file_put_contents($file, $contents) || !chmod($file, $perms) ) {
-			echo '<div class="error">'
-				. '<p>'
-				. sprintf(__('Error: Failed to write %s.', 'sem-cache'), 'wp-content/object-cache.php')
-				. '</p>'
-				. '</div>' . "\n";
-			return false;
-		}
-		
-		return true;
-	} # enable_memcached()
-	
-	
-	/**
-	 * disable_memcached()
-	 *
-	 * @return void
-	 **/
-
-	function disable_memcached() {
-		update_option('memory_cache', 0);
-		update_option('query_cache', 0);
-		update_option('object_cache', 0);
-		
-		if ( file_exists(WP_CONTENT_DIR . '/object-cache.php')
-			&& !unlink(WP_CONTENT_DIR . '/object-cache.php') ) {
-			echo '<div class="error">'
-				. '<p>'
-				. sprintf(__('Error: Failed to delete %s.', 'sem-cache'), 'wp-content/advanced-cache.php')
-				. '</p>'
-				. '</div>' . "\n";
-		}
-		
-		self::flush_objects();
-	} # disable_memcached()
-	
-	
-	/**
-	 * can_static()
-	 *
-	 * @return bool $can_static
-	 **/
-
-	static function can_static() {
-		static $can_static;
-		if ( isset($can_static) )
-			return $can_static;
-		
-		$can_static = !ini_get('safe_mode') && !ini_get('open_basedir')
-			&& ( !get_option('permalink_structure') || is_writable(ABSPATH . '.htaccess') )
-			&& ( defined('WP_CACHE') && WP_CACHE || is_writable(ABSPATH . 'wp-config.php') )
-			&& ( !file_exists(WP_CONTENT_DIR . '/advanced-cache.php')
-				|| is_writable(WP_CONTENT_DIR . '/advanced-cache.php') )
-			&& ( !file_exists(WP_CONTENT_DIR . '/cache') && is_writable(WP_CONTENT_DIR)
-				|| is_dir(WP_CONTENT_DIR . '/cache') && is_writable(WP_CONTENT_DIR . '/cache') );
-		
-		return $can_static;
-	} # can_static()
-	
-	
-	/**
-	 * can_memcached()
-	 *
-	 * @return bool $can_memcached
-	 **/
-
-	static function can_memcached() {
-		static $can_memcached;
-		if ( isset($can_memcached) )
-			return $can_memcached;
-		
-		# avoid conflicts with other memcached implementations
-		global $_wp_using_ext_object_cache;
-		if ( $_wp_using_ext_object_cache && !class_exists('object_cache') ) {
-			$can_memcached = false;
-			return $can_memcached;
-		}
-		
-		if ( !class_exists('Memcache') || !method_exists('Memcache', 'addServer') ) {
-			$can_memcached = false;
-			return $can_memcached;
-		}
-		
-		global $memcached_servers;
-		
-		if ( isset($memcached_servers) )
-			$buckets = $memcached_servers;
-		else
-			$buckets = array('127.0.0.1');
-		
-		reset($buckets);
-		if ( is_int(key($buckets)) )
-			$buckets = array('default' => $buckets);
-		
-		$can_memcached = false;
-		foreach ( $buckets as $bucket => $servers) {
-			$test = new Memcache();
-			foreach ( $servers as $server  ) {
-				list ( $node, $port ) = explode(':', $server);
-				if ( !$port )
-					$port = ini_get('memcache.default_port');
-				$port = intval($port);
-				if ( !$port )
-					$port = 11211;
-				$can_memcached |= @ $test->connect($node, $port);
-				if ( $can_memcached ) {
-					$test->close();
-					break;
-				}
-			}
-		}
-		
-		return $can_memcached;
-	} # can_memcached()
-	
-	
-	/**
-	 * can_memory()
-	 *
-	 * @return bool $can_memory
-	 **/
-
-	function can_memory() {
-		static $can_memory;
-		if ( isset($can_memory) )
-			return $can_memory;
-		
-		$can_memory = self::can_object()
-			&& ( defined('WP_CACHE') && WP_CACHE || is_writable(ABSPATH . 'wp-config.php') )
-			&& ( !file_exists(WP_CONTENT_DIR . '/advanced-cache.php')
-				|| is_writable(WP_CONTENT_DIR . '/advanced-cache.php') );
-		
-		return $can_memory;
-	} # can_memory()
-	
-	
-	/**
-	 * can_query()
-	 *
-	 * @return bool $can_query
-	 **/
-
-	function can_query() {
-		static $can_query;
-		if ( isset($can_query) )
-			return $can_query;
-		
-		$can_query = self::can_object()
-			&& version_compare(phpversion(), '5.1', '>=');
-		
-		return $can_query;
-	} # can_query()
-	
-	
-	/**
-	 * can_object()
-	 *
-	 * @return bool $can_object
-	 **/
-
-	function can_object() {
-		static $can_object;
-		if ( isset($can_object) )
-			return $can_object;
-		
-		$can_object = self::can_memcached()
-			&& ( !file_exists(WP_CONTENT_DIR . '/object-cache.php')
-				|| is_writable(WP_CONTENT_DIR . '/object-cache.php') );
-		
-		return $can_object;
-	} # can_object()
-	
-	
-	/**
-	 * can_assets()
-	 *
-	 * @return bool $can_static
-	 **/
-
-	static function can_assets() {
-		static $can_assets;
-		if ( isset($can_assets) )
-			return $can_assets;
-		
-		$can_assets = !@ini_get('safe_mode') && !@ini_get('open_basedir')
-			&& ( !file_exists(WP_CONTENT_DIR . '/cache') && is_writable(WP_CONTENT_DIR)
-				|| is_dir(WP_CONTENT_DIR . '/cache') && is_writable(WP_CONTENT_DIR . '/cache') );
-		
-		return $can_assets;
-	} # can_assets()
-	
-	
-	/**
-	 * can_gzip()
-	 *
-	 * @return bool $can_gzip
-	 **/
-
-	function can_gzip() {
-		static $can_gzip;
-		if ( isset($can_gzip) )
-			return $can_gzip;
-		
-		if ( function_exists('apache_get_modules') ) {
-			$mods = apache_get_modules();
-			if ( in_array('mod_deflate', $mods) && in_array('mod_headers', $mods) )
-				$can_gzip = true;
-		} else {
-			# just assume it works
-			$can_gzip = true;
-		}
-		
-		$can_gzip &= is_writable(ABSPATH . '.htaccess');
-		
-		return $can_gzip;
-	} # can_gzip()
 	
 	
 	/**
@@ -699,6 +171,11 @@ EOS;
 		if ( (bool) get_option('gzip_cache') ) {
 			$extra = <<<EOS
 
+<IfModule mod_headers.c>
+# Make sure proxies don't deliver the wrong content
+Header append Vary User-Agent env=!dont-vary
+</IfModule>
+
 <IfModule mod_deflate.c>
 # Insert filters
 AddOutputFilterByType DEFLATE text/plain
@@ -720,9 +197,6 @@ AddOutputFilterByType DEFLATE image/svg+xml
 BrowserMatch ^Mozilla/4 gzip-only-text/html
 BrowserMatch ^Mozilla/4\.0[678] no-gzip
 BrowserMatch \bMSI[E] !no-gzip !gzip-only-text/html
-
-# Make sure proxies don't deliver the wrong content
-Header append Vary User-Agent env=!dont-vary
 </IfModule>
 
 
@@ -836,32 +310,7 @@ EOS;
 	 **/
 
 	function flush_objects() {
-		$vars = array(
-			'update_core',
-			'update_plugins',
-			'update_themes',
-			'sem_update_plugins',
-			'sem_update_themes',
-			);
-		
-		$extra = array(
-			'feed_220431e2eb0959fa9c7fcb07c6e22632', # sem news
-			'feed_mod_220431e2eb0959fa9c7fcb07c6e22632', # sem_news timeout
-			);
-		foreach ( array_merge($vars, $extra) as $var ) {
-			$$var = get_transient($var);
-		}
 		wp_cache_flush();
-		foreach ( $vars as $var ) {
-			if ( $$var !== false )
-				set_transient($var, $$var);
-		}
-		if ( $feed_220431e2eb0959fa9c7fcb07c6e22632 !== false ) {
-			$var = 'feed_220431e2eb0959fa9c7fcb07c6e22632';
-			set_transient($var, $$var, 3600);
-			$var = 'feed_mod_220431e2eb0959fa9c7fcb07c6e22632';
-			set_transient($var, time(), 3600);
-		}
 	} # flush_objects()
 	
 	
@@ -882,10 +331,10 @@ EOS;
 			static $permalink_structure;
 			if ( !isset($permalink_structure) )
 				$permalink_structure = get_option('permalink_structure');
+			# 5 min throttling in case the site is getting hammered by comments
+			$timeout = !is_admin() && current_filter() == 'wp_update_comment_count' ? 300 : false;
 			if ( $permalink_structure ) {
-				$path = preg_replace("|[^/]+://[^/]+|", '', $link);
-				# 5 min throttling in case the site is getting hammered by comments
-				$timeout = current_filter() == 'wp_update_comment_count' ? 300 : false;
+				$path = preg_replace("|^[^/]+://[^/]+|", '', $link);
 				cache_fs::flush('/static/' . $path, $timeout);
 			}
 		}
@@ -970,10 +419,10 @@ EOS;
 			static $permalink_structure;
 			if ( !isset($permalink_structure) )
 				$permalink_structure = get_option('permalink_structure');
+			# 5 min throttling in case the site is getting hammered by comments
+			$timeout = !is_admin() && current_filter() == 'wp_update_comment_count' ? 300 : false;
 			if ( $permalink_structure ) {
-				$path = preg_replace("|[^/]+://[^/]+|", '', $link);
-				# 5 min throttling in case the site is getting hammered by comments
-				$timeout = current_filter() == 'wp_update_comment_count' ? 300 : false;
+				$path = preg_replace("|^[^/]+://[^/]+|", '', $link);
 				cache_fs::flush('/static/' . $path, $timeout);
 			}
 		}
@@ -990,10 +439,13 @@ EOS;
 	/**
 	 * flush_post()
 	 *
+	 * @param int $post_id
+	 * @param mixed $new
+	 * @param mixed $old
 	 * @return void
 	 **/
 
-	function flush_post($post_id) {
+	function flush_post($post_id, $new = null, $old = null) {
 		static $done = array();
 		
 		$post_id = (int) $post_id;
@@ -1003,10 +455,13 @@ EOS;
 		if ( isset($done[$post_id]) )
 			return;
 		
+		$done[$post_id] = true;
+		
 		# prevent mass-flushing when the permalink structure hasn't changed
 		remove_action('generate_rewrite_rules', array('sem_cache', 'flush_cache'));
 		
-		$done[$post_id] = true;
+		if ( current_filter() == 'wp_update_comment_count' && $new == $old )
+			return;
 		
 		$post = get_post($post_id);
 		if ( !$post || wp_is_post_revision($post_id) )
@@ -1023,7 +478,7 @@ EOS;
 		# flush the home and blog pages
 		self::do_flush_home();
 		
-		if ( $post->post_type == 'post' && current_filter() != 'wp_update_comment_count' ) {
+		if ( $post->post_type == 'post' && in_array(current_filter(), array('save_post', 'delete_post')) ) {
 			# flush categories
 			$cats = wp_get_object_terms($post_id, 'category');
 			$cat_ids = array();
@@ -1102,7 +557,7 @@ EOS;
 			self::flush_post_url($link);
 			
 			$pages = preg_match("/<!--nextpage-->/", $content);
-			for ( $i = 1; $i <= $pages; $i++ ) {
+			for ( $i = 1; $i < $pages; $i++ ) {
 				if ( !$permalink_structure )
 					$extra = $link . '&page=' . $i;
 				else
@@ -1375,10 +830,11 @@ add_action('pre_post_update', array('sem_cache', 'pre_flush_post'));
 foreach ( array(
 	'save_post',
 	'delete_post',
-	'wp_update_comment_count',
 	) as $hook ) {
 	add_action($hook, array('sem_cache', 'flush_post'), 1); // before _save_post_hook()
 }
+
+add_action('wp_update_comment_count', array('sem_cache', 'flush_post'), 1, 3); // before _save_post_hook()
 
 foreach ( array(
 	'switch_theme',

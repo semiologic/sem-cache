@@ -84,7 +84,6 @@ class object_cache {
 
 	var $cache = array();
 	var $mc = array();
-	var $group_ops = array();
 
 	var $default_expiration = 0;
 
@@ -107,10 +106,8 @@ class object_cache {
 		
 		$result = $mc->add($key, $data, false, $expire);
 		
-		if ( false !== $result ) {
-			$this->group_ops[$group][] = "add $id";
+		if ( false !== $result )
 			$this->cache[$key] = $data;
-		}
 		
 		return $result;
 	}
@@ -163,8 +160,6 @@ class object_cache {
 
 		$result = $mc->delete($key);
 
-		$this->group_ops[$group][] = "delete $id";
-
 		if ( false !== $result )
 			unset($this->cache[$key]);
 
@@ -183,8 +178,12 @@ class object_cache {
 		$done = true;
 		global $wpdb;
 		
-		# flush and warm up posts
-		$posts = $wpdb->get_results("SELECT * FROM $wpdb->posts WHERE post_status IN ('publish', 'private') OR post_type = 'attachment'");
+		# flush posts
+		$posts = $wpdb->get_results("SELECT ID, post_title, post_name, post_date, post_type, post_status, post_author FROM $wpdb->posts WHERE post_status IN ('publish', 'private') OR post_type = 'attachment'");
+		
+		# force a widget flush
+		if ( $post = current($posts) )
+			do_action('save_post', $post->ID, $post);
 		
 		$post_ids = array();
 		foreach ( $posts as $post ) {
@@ -193,42 +192,32 @@ class object_cache {
 			$this->delete($post->ID, 'post_meta');
 			clean_object_term_cache($post->ID, 'post');
 			do_action('clean_post_cache', $post->ID);
-			$this->add($post->ID, $post, 'posts');
+			# fill a temporary bucket so as to handle permalinks
+			$key = $this->key($post->ID, 'posts');
+			$this->cache[$key] = $post;
+			
+			if ( $post->post_type == 'post' ) {
+				sem_cache::do_flush_author($post->post_author);
+				sem_cache::do_flush_date($post->post_date);
+			}
 		}
 		
 		unset($posts);
 		
-		$cache = array();
-		$meta_list = $wpdb->get_results("SELECT post_id, meta_key, meta_value FROM $wpdb->postmeta JOIN $wpdb->posts ON $wpdb->posts.ID = $wpdb->postmeta.post_id WHERE $wpdb->posts.post_status IN ('publish', 'private') OR $wpdb->posts.post_type = 'attachment';", ARRAY_A);
+		# flush get_permalink() intensive stuff before flushing terms
+		foreach ( $post_ids as $post_id )
+			sem_cache::do_flush_post($post_id);
 		
-		foreach ( (array) $meta_list as $metarow) {
-			$mpid = (int) $metarow['post_id'];
-			$mkey = $metarow['meta_key'];
-			$mval = $metarow['meta_value'];
-
-			// Force subkeys to be array type:
-			if ( !isset($cache[$mpid]) || !is_array($cache[$mpid]) )
-				$cache[$mpid] = array();
-			if ( !isset($cache[$mpid][$mkey]) || !is_array($cache[$mpid][$mkey]) )
-				$cache[$mpid][$mkey] = array();
-
-			// Add a value to the current pid/key:
-			$cache[$mpid][$mkey][] = $mval;
-		}
+		# flush home
+		sem_cache::do_flush_home();
 		
-		foreach ( $post_ids as $post_id ) {
-			if ( !isset($cache[$post_id]) )
-				$cache[$post_id] = array();
-			$this->set($post_id, $cache[$post_id], 'post_meta');
-		}
-		
-		unset($cache, $meta_list);
-		
-		# flush and warm up terms
-		$terms = $wpdb->get_results("SELECT term_id, taxonomy FROM $wpdb->term_taxonomy");
+		# flush terms
+		$terms = $wpdb->get_results("SELECT term_id, taxonomy FROM $wpdb->term_taxonomy WHERE count > 0");
 		$taxonomies = array();
 		$term_ids = array();
-		foreach ( (array) $terms as $term ) {
+		foreach ( $terms as $term )
+			sem_cache::do_flush_term($term->term_id, $term->taxonomy);
+		foreach ( $terms as $term ) {
 			$taxonomies[] = $term->taxonomy;
 			$term_ids[] = $term->term_id;
 			$this->delete($term->term_id, $term->taxonomy);
@@ -244,15 +233,59 @@ class object_cache {
 		
 		$this->set('last_changed', time(), 'terms');
 		
-		$terms = $wpdb->get_results("SELECT t.*, tt.* FROM $wpdb->terms as t JOIN $wpdb->term_taxonomy as tt ON t.term_id = tt.term_id AND taxonomy = 'category' AND count > 0");
-		foreach ( $terms as $term )
-			$this->set($term->term_id, $term, $term->taxonomy);
+		unset($terms);
 		
-		# users and options don't need to be flushed, nor do front-end items such as widgets
+		# flush users
+		$user_ids = $wpdb->get_col("SELECT ID FROM $wpdb->users");
+		foreach ( $user_ids as $user_id )
+			$this->delete($user_id, 'users');
 		
-		# we can now flush get_permalink() intensive stuff
-		foreach ( $post_ids as $post_id )
-			sem_cache::flush_post($post_id);
+		unset($user_ids);
+		
+		# backup key transients
+		$transients = array(
+			'update_core',
+			'update_plugins',
+			'update_themes',
+			'sem_memberships',
+			'sem_update_plugins',
+			'sem_update_themes',
+			);
+		
+		$extra = array(
+			'feed_220431e2eb0959fa9c7fcb07c6e22632', # sem news
+			'feed_mod_220431e2eb0959fa9c7fcb07c6e22632', # sem_news timeout
+			);
+		
+		foreach ( array_merge($transients, $extra) as $var )
+			$$var = get_transient($var);
+		
+		# flush options
+		$options = $wpdb->get_col("SELECT option_name FROM $wpdb->options");
+		foreach ( $options as $option ) {
+			if ( !in_array($option, array_merge($transients, $extra)) ) {
+				if ( preg_match("/^_transient_/", $option) )
+					delete_option($option);
+				else
+					$this->delete($option, 'options');
+			}
+		}
+		$this->delete('notoptions', 'options');
+		
+		unset($options);
+		
+		# restore key transients
+		foreach ( $transients as $var ) {
+			if ( $$var !== false )
+				set_transient($var, $$var);
+		}
+		
+		if ( $feed_220431e2eb0959fa9c7fcb07c6e22632 !== false ) {
+			$var = 'feed_220431e2eb0959fa9c7fcb07c6e22632';
+			set_transient($var, $$var, 3600);
+			$var = 'feed_mod_220431e2eb0959fa9c7fcb07c6e22632';
+			set_transient($var, time(), 3600);
+		}
 		
 		return true;
 	}
@@ -275,8 +308,6 @@ class object_cache {
 				$this->cache_misses++;
 		}
 
-		$this->group_ops[$group][] = "get $id";
-		
 		if ( is_null($value) )
 			$value = false;
 		$this->cache[$key] = $value;
@@ -365,18 +396,12 @@ class object_cache {
 			}
 		}
 		
-		global $blog_id, $table_prefix;
-		
-		if ( function_exists('is_site_admin') ) {
-			$this->blog_prefix = $blog_id;
-			$this->global_prefix = '';
-		} else {
-			$this->blog_prefix = DB_NAME . ':' . $table_prefix;
-			if ( defined('CUSTOM_USER_TABLE') && defined('CUSTOM_USER_META_TABLE') )
-				$this->global_prefix = DB_NAME;
-			else
-				$this->global_prefix = $this->blog_prefix;
-		}
+		global $table_prefix;
+		$this->blog_prefix = DB_NAME . ':' . $table_prefix;
+		if ( function_exists('is_site_admin') || defined('CUSTOM_USER_TABLE') && defined('CUSTOM_USER_META_TABLE') )
+			$this->global_prefix = DB_NAME;
+		else
+			$this->global_prefix = $this->blog_prefix;
 	}
 } # object_cache
 
