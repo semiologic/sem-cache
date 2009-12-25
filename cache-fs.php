@@ -124,11 +124,12 @@ class cache_fs {
 	 *
 	 * @param string $dir
 	 * @param int $timeout
+	 * @param bool $recursive
 	 * @return bool $success
 	 **/
-
-	static function flush($dir = '/', $timeout = false) {
-		return self::rm(self::path_join($dir), $timeout);
+	
+	static function flush($dir = '/', $timeout = false, $recursive = true) {
+		return self::rm(self::path_join($dir), $timeout, $recursive);
 	} # flush()
 	
 	
@@ -137,17 +138,20 @@ class cache_fs {
 	 *
 	 * @param string $dir
 	 * @param int $timeout
+	 * @param bool $recursive
 	 * @return bool $success
 	 **/
 
-	protected static function rm($dir, $timeout = false) {
+	protected static function rm($dir, $timeout = false, $recursive = true) {
 		$dir = rtrim($dir, '/');
 		
 		if ( !file_exists($dir) )
 			return true;
 		
-		if ( is_file($dir) )
+		if ( !is_dir($dir) )
 			return ( $timeout && ( filemtime($dir) + $timeout >= time() ) ) || unlink($dir);
+		elseif ( !$recursive )
+			return is_file("$dir/index.html") ? self::rm("$dir/index.html", $timeout, $recursive) : true;
 		
 		if ( !( $handle = opendir($dir) ) )
 			return false;
@@ -156,7 +160,7 @@ class cache_fs {
 		while ( ( $file = readdir($handle) ) !== false ) {
 			if ( in_array($file, array('.', '..')) )
 				continue;
-			$success &= !self::rm("$dir/$file", $timeout);
+			$success &= self::rm("$dir/$file", $timeout, $recursive);
 		}
 		
 		closedir($handle);

@@ -3,7 +3,7 @@
 Plugin Name: Semiologic Cache
 Plugin URI: http://www.semiologic.com/software/sem-cache/
 Description: An advanced caching module for WordPress.
-Version: 2.0 beta5
+Version: 2.0 beta6
 Author: Denis de Bernardy
 Author URI: http://www.getsemiologic.com
 Text Domain: sem-cache
@@ -336,18 +336,41 @@ EOS;
 			# 5 min throttling in case the site is getting hammered by comments
 			$timeout = !is_admin() && current_filter() == 'wp_update_comment_count' ? 300 : false;
 			if ( $permalink_structure ) {
-				$path = preg_replace("|^[^/]+://[^/]+|", '', $link);
-				cache_fs::flush('/static/' . $path, $timeout);
+				$path = trim(preg_replace("|^[^/]+://[^/]+|", '', $link), '/');
+				cache_fs::flush('/static/' . $path, $timeout, false);
 			}
 		}
 		if ( memory_cache ) {
 			wp_cache_delete($cache_id, 'cached_headers');
 			wp_cache_delete($cache_id, 'cached_buffers');
 		} elseif ( static_cache ) {
-			cache_fs::flush('/semi-static/' . $cache_id . '.meta', $timeout);
-			cache_fs::flush('/semi-static/' . $cache_id . '.html', $timeout);
+			cache_fs::flush('/semi-static/' . $cache_id . '.meta', $timeout, false);
+			cache_fs::flush('/semi-static/' . $cache_id . '.html', $timeout, false);
 		}
 	} # flush_url()
+	
+	
+	/**
+	 * flush_feed_url()
+	 *
+	 * @param string $url
+	 * @return void
+	 **/
+
+	function flush_feed_url($link) {
+		$cache_id = md5($link);
+		
+		wp_cache_delete($cache_id, 'url2posts');
+		wp_cache_delete($cache_id, 'url2posts_found');
+		
+		if ( memory_cache ) {
+			wp_cache_delete($cache_id, 'cached_headers');
+			wp_cache_delete($cache_id, 'cached_buffers');
+		} elseif ( static_cache ) {
+			cache_fs::flush('/semi-static/' . $cache_id . '.meta', $timeout, false);
+			cache_fs::flush('/semi-static/' . $cache_id . '.html', $timeout, false);
+		}
+	} # flush_feed_url()
 	
 	
 	/**
@@ -424,16 +447,16 @@ EOS;
 			# 5 min throttling in case the site is getting hammered by comments
 			$timeout = !is_admin() && current_filter() == 'wp_update_comment_count' ? 300 : false;
 			if ( $permalink_structure ) {
-				$path = preg_replace("|^[^/]+://[^/]+|", '', $link);
-				cache_fs::flush('/static/' . $path, $timeout);
+				$path = trim(preg_replace("|^[^/]+://[^/]+|", '', $link), '/');
+				cache_fs::flush('/static/' . $path, $timeout, false);
 			}
 		}
 		if ( memory_cache ) {
 			wp_cache_delete($cache_id, 'cached_headers');
 			wp_cache_delete($cache_id, 'cached_buffers');
 		} elseif ( static_cache ) {
-			cache_fs::flush('/semi-static/' . $cache_id . '.meta', $timeout);
-			cache_fs::flush('/semi-static/' . $cache_id . '.html', $timeout);
+			cache_fs::flush('/semi-static/' . $cache_id . '.meta', $timeout, false);
+			cache_fs::flush('/semi-static/' . $cache_id . '.html', $timeout, false);
 		}
 	} # flush_post_url()
 	
@@ -555,10 +578,8 @@ EOS;
 			$pages = max($pages, preg_match("/<!--nextpage-->/", $old['post_content']));
 		}
 		
-		foreach ( array_unique($links) as $link => $content ) {
+		foreach ( array_unique($links) as $link ) {
 			self::flush_post_url($link);
-			
-			$pages = preg_match("/<!--nextpage-->/", $content);
 			for ( $i = 1; $i < $pages; $i++ ) {
 				if ( !$permalink_structure )
 					$extra = $link . '&page=' . $i;
@@ -616,7 +637,7 @@ EOS;
 		# flush the blog feeds
 		foreach ( array('rss2', 'atom', 'comments_rss2', 'comments_atom') as $feed ) {
 			$link = get_feed_link($feed);
-			self::flush_url($link);
+			self::flush_feed_url($link);
 		}
 	} # do_flush_home()
 	
@@ -650,7 +671,7 @@ EOS;
 			else
 				$link = get_tag_feed_link($tag_id, $feed);
 			$link = str_replace('&amp;', '&', $link);
-			self::flush_url($link);
+			self::flush_feed_url($link);
 		}
 	} # do_flush_term()
 	
@@ -674,7 +695,7 @@ EOS;
 		
 		foreach ( array('rss2', 'atom') as $feed ) {
 			$link = str_replace('&amp;', '&', get_author_feed_link($author_id, $feed));
-			self::flush_url($link);
+			self::flush_feed_url($link);
 		}
 	} # do_flush_author()
 	
