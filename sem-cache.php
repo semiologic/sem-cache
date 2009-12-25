@@ -184,6 +184,7 @@ AddOutputFilterByType DEFLATE application/rss+xml
 AddOutputFilterByType DEFLATE application/javascript
 AddOutputFilterByType DEFLATE application/x-javascript
 AddOutputFilterByType DEFLATE application/json
+AddOutputFilterByType DEFLATE application/x-json
 AddOutputFilterByType DEFLATE application/x-httpd-php
 AddOutputFilterByType DEFLATE application/x-httpd-fastphp
 AddOutputFilterByType DEFLATE image/svg+xml
@@ -191,7 +192,13 @@ AddOutputFilterByType DEFLATE image/svg+xml
 # Drop problematic browsers
 BrowserMatch ^Mozilla/4 gzip-only-text/html
 BrowserMatch ^Mozilla/4\.0[678] no-gzip
-BrowserMatch \bMSI[E] !no-gzip !gzip-only-text/html
+
+# IE5.x and IE6 get no gzip, but 7+ should
+BrowserMatch \bMSIE\s[789] !no-gzip !gzip-only-text/html
+# IE 6.0 after SP2 has no gzip bugs
+BrowserMatch \bMSIE.+SV !no-gzip
+# Opera occasionally pretends to be IE with "Mozilla/4.0"
+BrowserMatch \bOpera !no-gzip
 </IfModule>
 
 
