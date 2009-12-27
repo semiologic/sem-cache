@@ -259,7 +259,7 @@ class sem_cache_admin {
 			. '</th>' . "\n"
 			. '<td>'
 			. '<p>'
-			. '<label for="static_cache">'
+			. '<label>'
 			. '<input type="checkbox"'
 				. ' id="static_cache" name="static_cache"'
 				. checked((bool) get_option('static_cache'), true, false)
@@ -273,7 +273,7 @@ class sem_cache_admin {
 			. '</label>'
 			. '</p>' . "\n"
 			. '<p>'
-			. '<label for="static_cache">'
+			. '<label>'
 			. '<input type="checkbox"'
 				. ' id="memory_cache" name="memory_cache"'
 				. checked((bool) get_option('memory_cache'), true, false)
@@ -312,7 +312,7 @@ class sem_cache_admin {
 			. '</th>' . "\n"
 			. '<td>'
 			. '<p>'
-			. '<label for="static_cache">'
+			. '<label>'
 			. '<input type="checkbox"'
 				. ' id="query_cache" name="query_cache"'
 				. checked((bool) get_option('query_cache'), true, false)
@@ -344,7 +344,7 @@ class sem_cache_admin {
 			. '</th>' . "\n"
 			. '<td>'
 			. '<p>'
-			. '<label for="static_cache">'
+			. '<label>'
 			. '<input type="checkbox"'
 				. ' id="object_cache" name="object_cache"'
 				. checked((bool) get_option('object_cache'), true, false)
@@ -376,7 +376,7 @@ class sem_cache_admin {
 			. '</th>' . "\n"
 			. '<td>'
 			. '<p>'
-			. '<label for="asset_cache">'
+			. '<label>'
 			. '<input type="checkbox"'
 				. ' id="asset_cache" name="asset_cache"'
 				. checked((bool) get_option('asset_cache'), true, false)
@@ -405,7 +405,7 @@ class sem_cache_admin {
 			. '</th>' . "\n"
 			. '<td>'
 			. '<p>'
-			. '<label for="gzip_cache">'
+			. '<label>'
 			. '<input type="checkbox"'
 				. ' id="gzip_cache" name="gzip_cache"'
 				. checked((bool) get_option('gzip_cache'), true, false)
