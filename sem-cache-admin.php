@@ -24,10 +24,10 @@ class sem_cache_admin {
 			$timeout = cache_timeout;
 		
 		case 'flush':
-			sem_cache::flush_assets($timeout);
-			sem_cache::flush_static($timeout);
-			if ( !get_option('memory_cache') )
-				sem_cache::flush_objects();
+			cache_fs::flush('/assets/', $timeout);
+			cache_fs::flush('/static/', $timeout);
+			cache_fs::flush('/semi-static/', $timeout);
+			wp_cache_flush();
 			do_action('flush_cache');
 			
 			echo '<div class="updated fade">' . "\n"
@@ -99,15 +99,15 @@ class sem_cache_admin {
 				. '</p>' . "\n"
 				. '</div>' . "\n";
 			break;
-		}
-		
-		if ( !get_option('object_cache') && class_exists('object_cache') ) {
-			# do a hard object flush
-			sem_cache::flush_objects();
+			
+			if ( !get_option('object_cache') && class_exists('object_cache') ) {
+				# do a hard object flush
+				wp_cache_flush();
+			}
 		}
 		
 		if ( file_exists(WP_CONTENT_DIR . '/cache/wp_cache_mutex.lock') )
-			cache_fs::flush('/', $timeout);
+			cache_fs::flush('/');
 	} # save_options()
 	
 	
