@@ -868,7 +868,6 @@ foreach ( array(
 	'update_option_sem6_options',
 	'generate_rewrite_rules',
 	
-	'flush_cache',
 	'after_db_upgrade',
 	
 	'update_option_sem_seo',
