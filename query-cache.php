@@ -9,9 +9,9 @@ class query_cache {
 	public $cache_hits = 0;
 	
 	protected static $wpdb;
-	protected static $request;
-	protected static $found;
 	protected static $cache_id;
+	protected static $wp_query;
+	protected static $found;
 	
 	
 	/**
@@ -111,9 +111,12 @@ class query_cache {
 		global $wp_the_query;
 		$var = false;
 		
-		if ( self::$found !== false && $query == 'SELECT FOUND_ROWS()' ) {
-			$var = self::$found;
-			$this->cache_hits++;
+		if ( self::$wp_query === $wp_the_query && $query == 'SELECT FOUND_ROWS()' ) {
+			if ( self::$found !== false ) {
+				$var = self::$found;
+				self::$found = false;
+				$this->cache_hits++;
+			}
 		} elseif ( $wp_the_query->is_page && preg_match("/^SELECT ID FROM $wpdb->posts WHERE post_parent = (\d+) AND post_type = 'page' LIMIT 1$/", $query, $post_id) ) {
 			$post_id = end($post_id);
 			$var = $this->get_body_class($post_id);
@@ -217,7 +220,7 @@ class query_cache {
 		global $wp_the_query;
 		$results = false;
 		
-		if ( self::$request && $query == self::$request ) {
+		if ( self::$wp_query === $wp_the_query && self::$wp_query->request === $query ) {
 			$results = $this->get_posts($query);
 		} elseif ( $wp_the_query->is_page && !$wp_the_query->in_the_loop && preg_match("/^SELECT ID, post_name, post_parent FROM $wpdb->posts WHERE post_name = '[^']+' AND \(post_type = 'page' OR post_type = 'attachment'\)$/", $query) ) {
 			$results = $this->get_page_by_path($query);
@@ -313,13 +316,12 @@ class query_cache {
 	function get_posts($query) {
 		global $wpdb;
 		global $wp_query;
-		global $wp_the_query;
 		$results = false;
 		
-		if ( $wp_query !== $wp_the_query || $query != self::$request ) {
-			# do nothing: it's not reliably cacheable
-			return $results;
-		} elseif ( $wp_query->is_singular ) {
+		if ( !$wp_query->is_singular && is_user_logged_in() )
+			$query = self::maybe_strip_private_posts($query);
+		
+		if ( $wp_query->is_singular ) {
 			$post_id = $wp_query->get_queried_object_id();
 			if ( !$post_id )
 				$post_id = wp_cache_get(self::$cache_id, 'url2post_id');
@@ -364,106 +366,38 @@ class query_cache {
 	
 	
 	/**
-	 * posts_request()
+	 * maybe_strip_private_posts()
 	 *
 	 * @param string $posts_request
 	 * @return string $posts_request
 	 **/
 
-	static function posts_request($posts_request) {
+	static function maybe_strip_private_posts($posts_request) {
 		global $wpdb;
-		global $wp_query;
-		global $wp_the_query;
 		
-		if ( $wp_query->is_preview )
-			return $posts_request;
-		
-		if ( !$wp_query->is_singular && is_user_logged_in() ) {
-			# optimize the query a bit
-			$user = wp_get_current_user();
-			$cap = 'posts';
-			if ( preg_match("/AND $wpdb->posts.post_type = '([^']+)'/", $posts_request, $cap) ) {
-				$cap = end($cap);
-				if ( $cap == 'page' )
-					$cap = 'pages';
-				else
-					$cap = 'posts';
-				
-				$strip = false;
-				if ( current_user_can("read_private_$cap") ) {
-					if ( !self::has_private_posts() )
-						$strip = " OR $wpdb->posts.post_status = 'private'";
-				} elseif ( !current_user_can("edit_$cap") || !self::has_private_posts($user->ID) ) {
-					$strip = " OR $wpdb->posts.post_author = $user->ID AND $wpdb->posts.post_status = 'private'";
-				}
-				
-				$posts_request = str_replace($strip, '', $posts_request);
+		# optimize the query a bit
+		$user = wp_get_current_user();
+		$cap = 'posts';
+		if ( preg_match("/AND $wpdb->posts.post_type = '([^']+)'/", $posts_request, $cap) ) {
+			$cap = end($cap);
+			if ( $cap == 'page' )
+				$cap = 'pages';
+			else
+				$cap = 'posts';
+			
+			$strip = false;
+			if ( current_user_can("read_private_$cap") ) {
+				if ( !self::has_private_posts() )
+					$strip = " OR $wpdb->posts.post_status = 'private'";
+			} elseif ( !current_user_can("edit_$cap") || !self::has_private_posts($user->ID) ) {
+				$strip = " OR $wpdb->posts.post_author = $user->ID AND $wpdb->posts.post_status = 'private'";
 			}
-		}
-		
-		if ( $wp_query === $wp_the_query && !isset(self::$request) ) {
-			self::$request = $posts_request;
-			self::$found = false;
+			
+			$posts_request = str_replace($strip, '', $posts_request);
 		}
 		
 		return $posts_request;
-	} # posts_request()
-	
-	
-	/**
-	 * posts_results()
-	 *
-	 * @param array $posts
-	 * @return array $posts
-	 **/
-
-	static function posts_results($posts) {
-		global $wp_query;
-		
-		if ( $wp_query->is_preview || isset($_GET['trashed']) )
-			return $posts;
-		
-		if ( $wp_query->is_singular ) {
-			$post_id = wp_cache_get(self::$cache_id, 'url2post_id');
-			
-			if ( $post_id === false ) {
-				if ( !$posts )
-					$post_id = 0;
-				else
-					$post_id = $posts[0]->ID;
-				if ( !$wp_query->is_paged && !$wp_query->is_feed && !isset($_GET['debug']) )
-					wp_cache_add(self::$cache_id, $post_id, 'url2post_id');
-				elseif ( $wp_query->is_feed )
-					wp_cache_add(self::$cache_id, $post_id, 'url2post_id', 1800);
-				else
-					wp_cache_add(self::$cache_id, $post_id, 'url2post_id', cache_timeout);
-			}
-		}
-		
-		return $posts;
-	} # posts_results()
-	
-	
-	/**
-	 * found_posts()
-	 *
-	 * @param int $num_posts
-	 * @return int $num_posts
-	 **/
-
-	function found_posts($num_posts) {
-		global $wp_query;
-		global $wp_the_query;
-		
-		if ( $wp_query->is_preview || isset($_GET['trashed']) )
-			return $num_posts;
-		
-		if ( $wp_query === $wp_the_query && self::$request == $posts_request ) {
-			self::$request = false;
-			self::$found = false;
-		}
-		return $num_posts;
-	} # found_posts()
+	} # maybe_strip_private_posts()
 	
 	
 	/**
@@ -503,12 +437,56 @@ class query_cache {
 		
 		return !empty($has_private_posts);
 	} # has_private_posts()
+	
+	
+	/**
+	 * pre_get_posts()
+	 *
+	 * @return void
+	 **/
+
+	function pre_get_posts(&$wp_query) {
+		self::$wp_query = $wp_query;
+	} # pre_get_posts()
+	
+	
+	/**
+	 * posts_results()
+	 *
+	 * @param array $posts
+	 * @return array $posts
+	 **/
+
+	static function posts_results($posts) {
+		global $wp_query;
+		
+		if ( $wp_query->is_preview || isset($_GET['trashed']) )
+			return $posts;
+		
+		if ( $wp_query->is_singular ) {
+			$post_id = wp_cache_get(self::$cache_id, 'url2post_id');
+			
+			if ( $post_id === false ) {
+				if ( !$posts )
+					$post_id = 0;
+				else
+					$post_id = $posts[0]->ID;
+				if ( $post_id && !$wp_query->is_paged && !$wp_query->is_feed && !isset($_GET['debug']) )
+					wp_cache_add(self::$cache_id, $post_id, 'url2post_id');
+				elseif ( $wp_query->is_feed )
+					wp_cache_add(self::$cache_id, $post_id, 'url2post_id', 1800);
+				else
+					wp_cache_add(self::$cache_id, $post_id, 'url2post_id', cache_timeout);
+			}
+		}
+		
+		return $posts;
+	} # posts_results()
 } # query_cache
 
 if ( ! $wpdb instanceof query_cache && $wpdb instanceof wpdb ) {
 	$wpdb = new query_cache($wpdb);
-	add_filter('posts_request', array('query_cache', 'posts_request'));
+	add_action('pre_get_posts', array('query_cache', 'pre_get_posts'));
 	add_filter('posts_results', array('query_cache', 'posts_results'));
-	add_filter('found_posts', array('query_cache', 'found_posts'));
 }
 ?>
