@@ -447,6 +447,7 @@ class query_cache {
 
 	function pre_get_posts(&$wp_query) {
 		self::$wp_query = $wp_query;
+		self::$found = false;
 	} # pre_get_posts()
 	
 	
@@ -459,6 +460,10 @@ class query_cache {
 
 	static function posts_results($posts) {
 		global $wp_query;
+		global $wp_the_query;
+		
+		if ( self::$wp_query !== $wp_the_query )
+			return $posts;
 		
 		if ( $wp_query->is_preview || isset($_GET['trashed']) )
 			return $posts;
