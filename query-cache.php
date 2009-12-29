@@ -120,7 +120,7 @@ class query_cache {
 		} elseif ( $wp_the_query->is_page && preg_match("/^SELECT ID FROM $wpdb->posts WHERE post_parent = (\d+) AND post_type = 'page' LIMIT 1$/", $query, $post_id) ) {
 			$post_id = end($post_id);
 			$var = $this->get_body_class($post_id);
-		} elseif ( preg_match("/SELECT `post_parent` FROM $wpdb->posts WHERE ID = (\d+) LIMIT 1/", $query, $post_id) ) {
+		} elseif ( preg_match("/^SELECT `post_parent` FROM $wpdb->posts WHERE ID = (\d+) LIMIT 1$/", $query, $post_id) ) {
 			$post_id = end($post_id);
 			$var = $this->get_post_parent($post_id);
 		}
