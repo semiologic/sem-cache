@@ -92,7 +92,7 @@ class object_cache {
 	function add($id, $data, $group = 'default', $expire = 0) {
 		$key = $this->key($id, $group);
 		
-		if ( in_array($group, $this->no_mc_groups) || $this->flush ) {
+		if ( in_array($group, $this->no_mc_groups) || $this->flush && $group != 'transient' ) {
 			$this->cache[$key] = $data;
 			return true;
 		} elseif ( isset($this->cache[$key]) && $this->cache[$key] !== false ) {
@@ -180,6 +180,8 @@ class object_cache {
 		$done = true;
 		global $wpdb;
 		$this->flush = true;
+		if ( method_exists('static_cache', 'disable') )
+			static_cache::disable();
 		
 		# flush posts
 		$posts = $wpdb->get_results("SELECT ID, post_title, post_name, post_date, post_type, post_status, post_author FROM $wpdb->posts WHERE post_status IN ('publish', 'private') OR post_type = 'attachment'");
@@ -340,7 +342,7 @@ class object_cache {
 
 	function replace($id, $data, $group = 'default', $expire = 0) {
 		$key = $this->key($id, $group);
-		if ( in_array($group, $this->no_mc_groups) || $this->flush ) {
+		if ( in_array($group, $this->no_mc_groups) || $this->flush && $group != 'transient' ) {
 			$this->cache[$key] = $data;
 			return true;
 		}
@@ -358,7 +360,7 @@ class object_cache {
 			return false;
 		$this->cache[$key] = $data;
 
-		if ( in_array($group, $this->no_mc_groups) || $this->flush )
+		if ( in_array($group, $this->no_mc_groups) || $this->flush && $group != 'transient' )
 			return true;
 
 		$expire = ($expire == 0) ? $this->default_expiration : $expire;

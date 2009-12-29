@@ -161,6 +161,7 @@ class static_cache {
 			|| ( defined('DOING_AJAX') && DOING_AJAX )
 			|| $_POST || !$sem_cache_cookies
 			|| array_intersect(array_keys($_COOKIE), (array) $sem_cache_cookies)
+			|| self::$nocache
 			)
 			return;
 		
