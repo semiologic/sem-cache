@@ -87,7 +87,7 @@ class asset_cache {
 		
 		foreach ( $css as $base => &$style ) {
 			$base = dirname($base) . '/';
-			$style = preg_replace("{url\s*\(\s*(\"|'|)(?!https?://)(./)?}i", "url($1$base", $style);
+			$style = preg_replace("{url\s*\(\s*([\"']?)(?![\"']?https?://)(\.{1,2}/.+?)\\1\s*\)}i", "url($1$base$2$1)", $style);
 		}
 		
 		cache_fs::put_contents($file, implode("\n\n", $css));
