@@ -312,8 +312,8 @@ class static_cache {
 		if ( self::$static ) {
 			$file = preg_replace("/#.*/", '', $_SERVER['REQUEST_URI']);
 			$file = '/static/' . trim($file, '/');
-			if ( !preg_match("|\.([^/.]+)$|", $file) )
-				$file = $file . '/index.html';
+			if ( !preg_match("/\.html$/", $file) )
+				$file = $file . '.html';
 			cache_fs::put_contents($file, $buffer);
 		} elseif ( self::$memory ) {
 			$cache_id = $host . preg_replace("/#.*/", '', $_SERVER['REQUEST_URI']);

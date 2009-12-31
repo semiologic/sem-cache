@@ -135,25 +135,41 @@ class sem_cache {
 			$mobile_agents = array_map('preg_quote', $mobile_agents);
 			$mobile_agents = implode('|', $mobile_agents);
 			
-			$extra = <<<EOS
+			global $wp_rewrite;
+			
+			if ( $wp_rewrite->use_trailing_slashes ) {
+				$extra = <<<EOS
 
 RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond $cache_dir/%{REQUEST_URI}/index.html -f
+RewriteCond $cache_dir%{REQUEST_URI}index.html -f
 RewriteCond %{HTTP_USER_AGENT} !^.+($mobile_agents)
 $cache_cookies
 RewriteCond %{QUERY_STRING} ^$
 RewriteCond %{THE_REQUEST} ^GET
-RewriteRule ^ $cache_url/%{REQUEST_URI}/index.html [L]
-
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond $cache_dir/%{REQUEST_URI} -f
-RewriteCond %{HTTP_USER_AGENT} !^.+($mobile_agents)
-$cache_cookies
-RewriteCond %{QUERY_STRING} ^$
-RewriteCond %{THE_REQUEST} ^GET
-RewriteRule ^ $cache_url/%{REQUEST_URI} [L]
+RewriteRule ^ $cache_url%{REQUEST_URI}index.html [L]
 
 EOS;
+			} else {
+				$extra = <<<EOS
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond $cache_dir%{REQUEST_URI} -f
+RewriteCond %{HTTP_USER_AGENT} !^.+($mobile_agents)
+$cache_cookies
+RewriteCond %{QUERY_STRING} ^$
+RewriteCond %{THE_REQUEST} ^GET
+RewriteRule ^ $cache_url%{REQUEST_URI} [L]
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond $cache_dir%{REQUEST_URI}.html -f
+RewriteCond %{HTTP_USER_AGENT} !^.+($mobile_agents)
+$cache_cookies
+RewriteCond %{QUERY_STRING} ^$
+RewriteCond %{THE_REQUEST} ^GET
+RewriteRule ^ $cache_url%{REQUEST_URI}.html [L]
+
+EOS;
+			}
 			
 			# this will simply fail if mod_rewrite isn't available
 			if ( preg_match("/RewriteBase.+\n*/i", $rules, $rewrite_base) ) {
