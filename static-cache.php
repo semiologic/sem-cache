@@ -62,6 +62,26 @@ class static_cache {
 	
 	
 	/**
+	 * wp_redirect_status()
+	 *
+	 * @param int $status_code
+	 * @return int $status_code
+	 **/
+
+	function wp_redirect_status($status_code) {
+		$text = get_status_header_desc($status_code);
+		$protocol = $_SERVER["SERVER_PROTOCOL"];
+		if ( 'HTTP/1.1' != $protocol && 'HTTP/1.0' != $protocol )
+			$protocol = 'HTTP/1.0';
+		$status_header = "$protocol $header $text";
+		if ( function_exists('apply_filters') )
+			$status_header = apply_filters('status_header', $status_header, $header, $text, $protocol);
+		
+		return $status_code;
+	} # wp_redirect_status()
+	
+	
+	/**
 	 * send_headers()
 	 *
 	 * @param array $headers
@@ -179,9 +199,7 @@ class static_cache {
 		if ( self::$started || headers_sent() || !self::$static && !self::$memory )
 			return;
 		
-		if ( isset($_SERVER['HTTPS']) && ( 'on' == strtolower($_SERVER['HTTPS']) || '1' == $_SERVER['HTTPS'] ) ) {
-			self::$host = 'https://' . $_SERVER['HTTP_HOST'];
-		} elseif ( isset($_SERVER['SERVER_PORT']) && ( '443' == $_SERVER['SERVER_PORT'] ) ) {
+		if ( isset($_SERVER['HTTPS']) && ( 'on' == strtolower($_SERVER['HTTPS']) || '1' == $_SERVER['HTTPS'] ) || isset($_SERVER['SERVER_PORT']) && ( '443' == $_SERVER['SERVER_PORT'] ) ) {
 			self::$host = 'https://' . $_SERVER['HTTP_HOST'];
 		} else {
 			self::$host = 'http://' . $_SERVER['HTTP_HOST'];
@@ -278,7 +296,7 @@ class static_cache {
 			return $buffer;
 		
 		# sanity check on incomplete files
-		if ( !preg_match("/(?:<\/html>|<\/rss>|<\/feed>)/i",$buffer) )
+		if ( !in_array(self::$status_code, array(301, 302)) && !preg_match("/(?:<\/html>|<\/rss>|<\/feed>)/i",$buffer) )
 			return $buffer;
 		
 		# sanity check on mobile users
@@ -294,17 +312,19 @@ class static_cache {
 		if ( self::$static ) {
 			$file = preg_replace("/#.*/", '', $_SERVER['REQUEST_URI']);
 			$file = '/static/' . trim($file, '/');
-			if ( !preg_match("/\.([^.]+)$/", $file) )
+			if ( !preg_match("|\.([^/.]+)$|", $file) )
 				$file = $file . '/index.html';
 			cache_fs::put_contents($file, $buffer);
 		} elseif ( self::$memory ) {
 			$cache_id = $host . preg_replace("/#.*/", '', $_SERVER['REQUEST_URI']);
 			$cache_id = md5($cache_id);
+			
 			$headers = headers_list();
 			if ( self::$status_header )
 				array_unshift($headers, self::$status_header);
+			
 			wp_cache_add($cache_id, $headers, 'cached_headers', cache_timeout);
-			if ( $buffer )
+			if ( $buffer && !in_array(self::$status_code, array(301, 302)) )
 				wp_cache_add($cache_id, $buffer, 'cached_buffers', cache_timeout);
 		} else {
 			 # poor man's memcached
@@ -313,10 +333,11 @@ class static_cache {
 			$file = '/semi-static/' . $cache_id;
 			
 			$headers = headers_list();
-			array_unshift($headers, self::$status_header);
+			if ( self::$status_header )
+				array_unshift($headers, self::$status_header);
 			
 			cache_fs::put_contents($file . '.meta', serialize($headers));
-			if ( $buffer )
+			if ( $buffer && !in_array(self::$status_code, array(301, 302)) )
 				cache_fs::put_contents($file . '.html', $buffer);
 		}
 		

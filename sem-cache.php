@@ -827,6 +827,7 @@ if ( class_exists('static_cache') ) {
 	
 	add_filter('status_header', array('static_cache', 'status_header'), 100, 2);
 	add_filter('nocache_headers', array('static_cache', 'disable'));
+	add_filter('wp_redirect_status', array('static_cache', 'wp_redirect_status'), 50);
 }
 
 add_action('wp_footer', array('sem_cache', 'stats'), 1000000);

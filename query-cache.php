@@ -318,8 +318,9 @@ class query_cache {
 		global $wp_query;
 		$results = false;
 		
-		if ( !$wp_query->is_singular && is_user_logged_in() )
-			$query = self::maybe_strip_private_posts($query);
+		if ( $wp_query->is_preview || $wp_query->is_robots || isset($_GET['trashed']) )
+			# bail: we don't want to cache this stuff
+			return $results;
 		
 		if ( $wp_query->is_singular ) {
 			$post_id = $wp_query->get_queried_object_id();
@@ -335,29 +336,62 @@ class query_cache {
 					$this->cache_hits++;
 				}
 			}
-		} elseif( $wp_query->is_preview || isset($_GET['trashed']) ) {
-			# bail: we don't want to cache this stuff
-		} elseif ( strpos($query, "'private'") !== false ) {
-			# bail: queries that return private posts can't efficiently be cached
+			
+			if ( $results !== false )
+				return $results;
+			
+			if ( !isset($_GET['debug']) && !$_POST ) {
+				$results = self::$wpdb->get_results($query);
+				if ( $results ) {
+					update_post_cache($results);
+					$post_id = $results[0]->ID;
+				} else {
+					$post_id = 0;
+				}
+				
+				if ( !$post_id || $wp_query->is_feed || redirect_canonical(null, false) )
+					$timeout = min(3600, cache_timeout);
+				elseif ( $wp_query->is_paged || self::$cache_id != md5(get_permalink($post_id)) )
+					$timout = cache_timeout;
+				else
+					$timeout = 0;
+				
+				wp_cache_add(self::$cache_id, $post_id, 'url2post_id', $timeout);
+			}
 		} else {
+			if ( !$wp_query->is_singular && is_user_logged_in() )
+				$query = self::maybe_strip_private_posts($query);
+			
+			if ( strpos($query, "'private'") !== false )
+				# bail: queries that return private posts can't be efficiently cached
+				return $results;
+			
 			$posts = wp_cache_get(self::$cache_id, 'url2posts');
 			$found = wp_cache_get(self::$cache_id, 'url2posts_found');
+			
 			if ( $posts !== false && $found !== false ) {
 				$results = $posts;
 				self::$found = $found;
 				$this->cache_hits++;
-			} elseif ( $wp_query->is_home || $wp_query->is_category || $wp_query->is_tag || $wp_query->is_author || $wp_query->is_date || $wp_query->is_feed && !$wp_query->is_singular && !$wp_query->is_archive /* home feed */ ) {
+				return $results;
+			}
+			
+			if ( isset($_GET['debug']) || $_POST )
+				return $results;
+			
+			if ( $wp_query->is_home || $wp_query->is_category || $wp_query->is_tag || $wp_query->is_author || $wp_query->is_date || $wp_query->is_feed && !$wp_query->is_singular && !$wp_query->is_archive /* home feed */ ) {
 				$results = self::$wpdb->get_results($query);
 				self::$found = self::$wpdb->get_var("SELECT FOUND_ROWS()");
-				if ( !$wp_query->is_paged && !$wp_query->is_feed && !isset($_GET['debug']) ) {
-					# no timeout: these requests can be efficiently flushed
-					wp_cache_add(self::$cache_id, $results, 'url2posts');
-					wp_cache_add(self::$cache_id, self::$found, 'url2posts_found');
-				} else {
-					# add a timeout: these requests are resource intensive to flush
-					wp_cache_add(self::$cache_id, $results, 'url2posts', cache_timeout);
-					wp_cache_add(self::$cache_id, self::$found, 'url2posts_found', cache_timeout);
-				}
+				
+				if ( !$results || $wp_query->is_feed || redirect_canonical(null, false) )
+					$timeout = min(3600, cache_timeout);
+				elseif ( $wp_query->is_paged )
+					$timout = cache_timeout;
+				else
+					$timeout = 0;
+				
+				wp_cache_add(self::$cache_id, $results, 'url2posts', $timeout);
+				wp_cache_add(self::$cache_id, self::$found, 'url2posts_found', $timeout);
 			}
 		}
 		
@@ -452,46 +486,25 @@ class query_cache {
 	
 	
 	/**
-	 * posts_results()
+	 * flush()
 	 *
-	 * @param array $posts
-	 * @return array $posts
+	 * @param mixed $in
+	 * @return mixed $in
 	 **/
 
-	static function posts_results($posts) {
-		global $wp_query;
-		global $wp_the_query;
-		
-		if ( self::$wp_query !== $wp_the_query )
-			return $posts;
-		
-		if ( $wp_query->is_preview || isset($_GET['trashed']) )
-			return $posts;
-		
-		if ( $wp_query->is_singular ) {
-			$post_id = wp_cache_get(self::$cache_id, 'url2post_id');
-			
-			if ( $post_id === false ) {
-				if ( !$posts )
-					$post_id = 0;
-				else
-					$post_id = $posts[0]->ID;
-				if ( $post_id && !$wp_query->is_paged && !$wp_query->is_feed && !isset($_GET['debug']) )
-					wp_cache_add(self::$cache_id, $post_id, 'url2post_id');
-				elseif ( $wp_query->is_feed )
-					wp_cache_add(self::$cache_id, $post_id, 'url2post_id', 1800);
-				else
-					wp_cache_add(self::$cache_id, $post_id, 'url2post_id', cache_timeout);
-			}
-		}
-		
-		return $posts;
-	} # posts_results()
+	function flush($in = null) {
+		wp_cache_delete(self::$cache_id, 'url2post_id');
+		wp_cache_delete(self::$cache_id, 'url2posts');
+		wp_cache_delete(self::$cache_id, 'url2posts_found');
+		return $in;
+	} # flush()
 } # query_cache
 
 if ( ! $wpdb instanceof query_cache && $wpdb instanceof wpdb ) {
 	$wpdb = new query_cache($wpdb);
 	add_action('pre_get_posts', array('query_cache', 'pre_get_posts'));
-	add_filter('posts_results', array('query_cache', 'posts_results'));
+	if ( static_cache || memory_cache )
+		add_filter('wp_redirect_status', array('query_cache', 'flush'));
+	add_action('flush_query_cache', array('query_cache', 'flush'));
 }
 ?>

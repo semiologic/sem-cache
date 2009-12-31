@@ -292,9 +292,9 @@ class object_cache {
 		
 		if ( $feed_220431e2eb0959fa9c7fcb07c6e22632 !== false ) {
 			$var = 'feed_220431e2eb0959fa9c7fcb07c6e22632';
-			set_transient($var, $$var, 3600);
+			set_transient($var, $$var, min(3600, cache_timeout));
 			$var = 'feed_mod_220431e2eb0959fa9c7fcb07c6e22632';
-			set_transient($var, time(), 3600);
+			set_transient($var, time(), min(3600, cache_timeout));
 		}
 		
 		return true;
