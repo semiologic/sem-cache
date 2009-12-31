@@ -24,7 +24,8 @@ class sem_cache_admin {
 			$timeout = cache_timeout;
 		
 		case 'flush':
-			cache_fs::flush('/assets/', $timeout);
+			if ( !$timeout )
+				cache_fs::flush('/assets/');
 			cache_fs::flush('/static/', $timeout);
 			cache_fs::flush('/semi-static/', $timeout);
 			wp_cache_flush();
@@ -125,7 +126,7 @@ class sem_cache_admin {
 		
 		screen_icon();
 		
-		list($files, $expired) = cache_fs::stats();
+		list($files, $expired) = cache_fs::stats('/', cache_timeout);
 		
 		$static_errors = array();
 		$memory_errors = array();

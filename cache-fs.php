@@ -33,8 +33,7 @@ class cache_fs {
 	 **/
 
 	protected static function path_join($file) {
-		return self::$base_dir . '/'
-			. trim($file, '/');
+		return rtrim(self::$base_dir . '/' . ltrim($file, '/'), '/');
 	} # path_join()
 	
 	
@@ -185,6 +184,10 @@ class cache_fs {
 			$expired_pages = 0;
 			$dir = self::path_join($bucket);
 		}
+		
+		# asset files never expire
+		if ( $dir == self::$base_dir . '/assets' )
+			$timeout = false;
 		
 		if ( !file_exists($dir) ) {
 			return array($total_pages, $expired_pages);
