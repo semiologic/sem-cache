@@ -349,7 +349,7 @@ class query_cache {
 					$post_id = 0;
 				}
 				
-				if ( !$post_id || $wp_query->is_feed || redirect_canonical(null, false) )
+				if ( !$post_id || $wp_query->is_feed )
 					$timeout = min(3600, cache_timeout);
 				elseif ( $wp_query->is_paged || self::$cache_id != md5(get_permalink($post_id)) )
 					$timout = cache_timeout;
