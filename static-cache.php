@@ -312,8 +312,13 @@ class static_cache {
 		if ( self::$static ) {
 			$file = preg_replace("/#.*/", '', $_SERVER['REQUEST_URI']);
 			$file = '/static/' . trim($file, '/');
-			if ( !preg_match("/\.html$/", $file) )
-				$file = $file . '.html';
+			if ( !preg_match("/\.html$/", $file) ) {
+				global $wp_rewrite;
+				if ( $wp_rewrite->use_trailing_slashes )
+					$file = $file . '/index.html';
+				else
+					$file = $file . '.html';
+			}
 			cache_fs::put_contents($file, $buffer);
 		} elseif ( self::$memory ) {
 			$cache_id = $host . preg_replace("/#.*/", '', $_SERVER['REQUEST_URI']);
