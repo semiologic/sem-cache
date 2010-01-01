@@ -182,11 +182,6 @@ EOS;
 		if ( (bool) get_option('gzip_cache') ) {
 			$extra = <<<EOS
 
-<IfModule mod_headers.c>
-# Make sure proxies don't deliver the wrong content
-Header append Vary User-Agent env=!dont-vary
-</IfModule>
-
 <IfModule mod_deflate.c>
 # Insert filters
 AddOutputFilterByType DEFLATE text/plain
@@ -230,6 +225,12 @@ EOS;
 		$extra = <<<EOS
 
 AddDefaultCharset $encoding
+
+<IfModule mod_headers.c>
+# Make sure proxies don't deliver the wrong content
+Header append Vary User-Agent env=!dont-vary
+Header append Vary Cookie env=!dont-vary
+</IfModule>
 
 EOS;
 		
