@@ -323,9 +323,7 @@ class query_cache {
 			return $results;
 		
 		if ( $wp_query->is_singular ) {
-			$post_id = $wp_query->get_queried_object_id();
-			if ( !$post_id )
-				$post_id = wp_cache_get(self::$cache_id, 'url2post_id');
+			$post_id = wp_cache_get(self::$cache_id, 'url2post_id');
 			if ( $post_id === 0 ) {
 				$results = array();
 				$this->cache_hits++;
