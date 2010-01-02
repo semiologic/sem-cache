@@ -138,7 +138,7 @@ class sem_cache_admin {
 		$gzip_notice = array();
 		
 		if ( !self::can_memcached() ) {
-			$error = sprintf(__('<a href="%1$s">Memcached</a> is not installed on your server, or the php extension is misconfigured, or the daemon is not running. Note that shared hosts never offer memcached; you need a dedicated server or a VPS such as those offered by <a href="%2$s">Hub</a> to take advantage of it. Also note that there are two PHP extensions, and that only <a href="%1$s">this one</a> is supported.', 'sem-cache'), 'http://www.php.net/manual/en/book.memcache.php', 'http://hub.org');
+			$error = sprintf(__('<a href="%1$s">Memcache</a> is not installed on your server, or the php extension is misconfigured, or the daemon is not running. Note that shared hosts never offer memcache; you need a dedicated server or a VPS such as those offered by <a href="%2$s">Hub</a> to take advantage of it. Also note that there are two PHP extensions, and that only <a href="%1$s">this one</a> is supported.', 'sem-cache'), 'http://www.php.net/manual/en/book.memcache.php', 'http://hub.org');
 			$memory_errors[] = $error;
 			$query_errors[] = $error;
 			$object_errors[] = $error;
@@ -207,7 +207,7 @@ class sem_cache_admin {
 		
 		foreach ( array(
 			'static_errors' => __('Filesystem-based static cache errors', 'sem-cache'),
-			'memory_errors' => __('Memcached-based static cache errors', 'sem-cache'),
+			'memory_errors' => __('Memcache-based static cache errors', 'sem-cache'),
 			'query_errors' => __('Query cache errors', 'sem-cache'),
 			'object_errors' => __('Object cache errors', 'sem-cache'),
 			'assets_errors' => __('Asset cache errors', 'sem-cache'),
@@ -250,7 +250,7 @@ class sem_cache_admin {
 				. sprintf(__('Flush %d expired files', 'sem-cache'), $expired)
 				. '</button>'
 			. '<p>'
-			. __('The first of the above three buttons will autodetect the best means to improve the performance of your site, and turn the cache on. The second one will turn the cache off. The last one will retain your settings, and stick to flushing the cache.', 'sem-cache')
+			. __('The first of the above four buttons will autodetect the best means to improve the performance of your site, and turn the cache on. The second one will turn the cache off. The last two will retain your settings, and stick to flushing the cache.', 'sem-cache')
 			. '</p>' . "\n"
 			. '</td>' . "\n"
 			. '</tr>' . "\n";
@@ -285,7 +285,7 @@ class sem_cache_admin {
 					)
 				. ' />'
 			. '&nbsp;'
-			. __('Serve memcached-based, static versions of my site\'s web pages.', 'sem-cache')
+			. __('Serve memcache-based, static versions of my site\'s web pages.', 'sem-cache')
 			. '</label>'
 			. '</p>' . "\n"
 			. '<p>'
@@ -298,7 +298,7 @@ class sem_cache_admin {
 			. __('The benefit of the filesystem-based static cache is that your site\'s key web pages, such as the site\'s front page or individual posts, will be served without even loading PHP. This allows for maximum scalability if your site is getting hammered by excrutiating traffic.', 'sem-cache')
 			. '</p>' . "\n"
 			. '<p>'
-			. __('The memcached-based static cache works in a similar manner, but stores cached pages in memcached rather than on the filesystem. PHP is always loaded, so it\'s a bit slower for key web pages; but it\'s much faster than using the filesystem for other web pages.', 'sem-cache')
+			. __('The memcache-based static cache works in a similar manner, but stores cached pages in memcache rather than on the filesystem. PHP is always loaded, so it\'s a bit slower for key web pages; but it\'s much faster than using the filesystem for other web pages.', 'sem-cache')
 			. '</p>' . "\n"
 			. '<p>'
 			. __('You\'ll usually want both turned on, in order to get the best of both worlds. The only exception is if your site is hosted on multiple servers: in this case, consider sticking to the memory-based static cache, because of the lag introduced by the filesystem\'s synchronisations from a server to the next.', 'sem-cache')
@@ -360,7 +360,7 @@ class sem_cache_admin {
 			. '</label>'
 			. '</p>' . "\n"
 			. '<p>'
-			. __('The object cache stores granular bits of information in memcached, and makes them available from a page to the next. This allows WordPress to load web pages without always needing to retrieve things such as options, users, or individual entries from the database.', 'sem-cache')
+			. __('The object cache stores granular bits of information in memcache, and makes them available from a page to the next. This allows WordPress to load web pages without always needing to retrieve things such as options, users, or individual entries from the database.', 'sem-cache')
 			. '</p>' . "\n"
 			. '<p>'
 			. __('The object cache\'s primary benefit is that it is always accurate: at no time will it ever serve data that is potentially outdated.', 'sem-cache')
