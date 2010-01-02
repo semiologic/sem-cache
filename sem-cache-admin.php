@@ -231,7 +231,7 @@ class sem_cache_admin {
 		
 		echo '<tr>' . "\n"
 			. '<th scope="row">'
-			. __('Please do it for me...', 'sem-cache')
+			. __('Quick and Easy', 'sem-cache')
 			. '</th>' . "\n"
 			. '<td>'
 			. '<button type="submit" name="action" value="on" class="submit button">'
