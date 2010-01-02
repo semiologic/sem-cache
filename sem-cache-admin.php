@@ -651,16 +651,16 @@ class sem_cache_admin {
 			return false;
 		}
 		
-		$static_cache = $static_cache ? 'true' : 'false';
-		$memory_cache = $memory_cache ? 'true' : 'false';
+		$use_static_cache = $static_cache ? 'true' : 'false';
+		$use_memory_cache = $memory_cache ? 'true' : 'false';
 		$sem_cache_cookies = var_export(sem_cache::get_cookies(), true);
 		$sem_mobile_agents = var_export(sem_cache::get_mobile_agents(), true);
 		$sem_cache_file = dirname(__FILE__) . '/static-cache.php';
 		
 		$contents = <<<EOS
 <?php
-define('static_cache', $static_cache);
-define('memory_cache', $memory_cache);
+define('static_cache', $use_static_cache);
+define('memory_cache', $use_memory_cache);
 
 \$sem_cache_cookies = $sem_cache_cookies;
 
@@ -697,7 +697,7 @@ EOS;
 		
 		# Enable the memory cache
 		if ( $memory_cache && !self::enable_memcached() )
-			return false;			
+			return false;
 		
 		# Enable the cache
 		$file = ABSPATH . 'wp-config.php';
