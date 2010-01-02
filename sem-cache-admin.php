@@ -29,6 +29,7 @@ class sem_cache_admin {
 			cache_fs::flush('/static/', $timeout);
 			cache_fs::flush('/semi-static/', $timeout);
 			wp_cache_flush();
+			remove_action('flush_cache', array('sem_cache', 'flush_cache'));
 			do_action('flush_cache');
 			
 			echo '<div class="updated fade">' . "\n"
