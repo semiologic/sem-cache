@@ -638,6 +638,9 @@ class sem_cache_admin {
 		$static_cache = (bool) get_option('static_cache');
 		$memory_cache = (bool) get_option('memory_cache');
 		
+		wp_clear_scheduled_hook('cache_timeout');
+		wp_clear_scheduled_hook('static_cache_timeout');
+		
 		# sanity check
 		if ( !$static_cache && !$memory_cache )
 			return self::disable_static();
@@ -743,6 +746,9 @@ EOS;
 	function disable_static() {
 		update_option('static_cache', 0);
 		update_option('memory_cache', 0);
+		
+		wp_clear_scheduled_hook('cache_timeout');
+		wp_clear_scheduled_hook('static_cache_timeout');
 		
 		# Prevent WP from adding new pages
 		$file = ABSPATH . 'wp-config.php';
