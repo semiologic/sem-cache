@@ -68,7 +68,7 @@ class static_cache {
 	 * @return int $status_code
 	 **/
 
-	function wp_redirect_status($status_code) {
+	static function wp_redirect_status($status_code) {
 		$text = get_status_header_desc($status_code);
 		$protocol = $_SERVER["SERVER_PROTOCOL"];
 		if ( 'HTTP/1.1' != $protocol && 'HTTP/1.0' != $protocol )

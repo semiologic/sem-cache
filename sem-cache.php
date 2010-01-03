@@ -57,7 +57,7 @@ class sem_cache {
 	 * @return void
 	 **/
 
-	function admin_menu() {
+	static function admin_menu() {
 		add_options_page(
 			__('Cache', 'sem-cache'),
 			__('Cache', 'sem-cache'),
@@ -74,7 +74,7 @@ class sem_cache {
 	 * @return void
 	 **/
 
-	function front_menu() {
+	static function front_menu() {
 		if ( !current_user_can('manage_options') )
 			return;
 		
@@ -248,7 +248,7 @@ EOS;
 	 * @return bool $success
 	 **/
 
-	function cache_timeout() {
+	static function cache_timeout() {
 		if ( !static_cache )
 			return;
 		cache_fs::flush('/static', cache_timeout);
@@ -263,7 +263,7 @@ EOS;
 	 * @return array $cookies
 	 **/
 
-	function get_cookies() {
+	static function get_cookies() {
 		$cookies = array(
 			LOGGED_IN_COOKIE,
 			'comment_author_' . COOKIEHASH,
@@ -281,7 +281,7 @@ EOS;
 	 * @return array $agents
 	 **/
 
-	function get_mobile_agents() {
+	static function get_mobile_agents() {
 		$agents = array(
 			'iPhone',
 			'iPod',
@@ -301,7 +301,7 @@ EOS;
 	 * @return void
 	 **/
 
-	function flush_static($timeout = false) {
+	static function flush_static($timeout = false) {
 		if ( static_cache )
 			cache_fs::flush('/static/', $timeout);
 		if ( memory_cache )
@@ -318,7 +318,7 @@ EOS;
 	 * @return void
 	 **/
 
-	function flush_assets($timeout = false) {
+	static function flush_assets($timeout = false) {
 		cache_fs::flush('/assets/', $timeout);
 	} # flush_assets()
 	
@@ -329,7 +329,7 @@ EOS;
 	 * @return void
 	 **/
 
-	function flush_objects() {
+	static function flush_objects() {
 		wp_cache_flush();
 	} # flush_objects()
 	
@@ -341,7 +341,7 @@ EOS;
 	 * @return void
 	 **/
 
-	function flush_url($link) {
+	static function flush_url($link) {
 		$cache_id = md5($link);
 		
 		wp_cache_delete($cache_id, 'url2posts');
@@ -375,7 +375,7 @@ EOS;
 	 * @return void
 	 **/
 
-	function flush_feed_url($link) {
+	static function flush_feed_url($link) {
 		$cache_id = md5($link);
 		
 		wp_cache_delete($cache_id, 'url2posts');
@@ -398,7 +398,7 @@ EOS;
 	 * @return void
 	 **/
 
-	function pre_flush_post($post_id) {
+	static function pre_flush_post($post_id) {
 		$post_id = (int) $post_id;
 		if ( !$post_id )
 			return;
@@ -453,7 +453,7 @@ EOS;
 	 * @return void
 	 **/
 
-	function flush_post_url($link) {
+	static function flush_post_url($link) {
 		$cache_id = md5($link);
 		
 		wp_cache_delete($cache_id, 'url2post_id');
@@ -488,7 +488,7 @@ EOS;
 	 * @return void
 	 **/
 
-	function flush_post($post_id, $new = null, $old = null) {
+	static function flush_post($post_id, $new = null, $old = null) {
 		static $done = array();
 		
 		$post_id = (int) $post_id;
@@ -577,7 +577,7 @@ EOS;
 	 * @return void
 	 **/
 
-	function do_flush_post($post_id) {
+	static function do_flush_post($post_id) {
 		static $done = array();
 		if ( isset($done[$post_id]) )
 			return;
@@ -619,7 +619,7 @@ EOS;
 	 * @return void
 	 **/
 
-	function do_flush_home() {
+	static function do_flush_home() {
 		static $done = false;
 		if ( $done )
 			return;
@@ -668,7 +668,7 @@ EOS;
 	 * @return void
 	 **/
 
-	function do_flush_term($term_id, $taxonomy) {
+	static function do_flush_term($term_id, $taxonomy) {
 		static $done = array();
 		if ( isset($done[$taxonomy][$term_id]) )
 			return;
@@ -701,7 +701,7 @@ EOS;
 	 * @return void
 	 **/
 
-	function do_flush_author($author_id) {
+	static function do_flush_author($author_id) {
 		static $done = array();
 		if ( isset($done[$author_id]) )
 			return;
@@ -724,7 +724,7 @@ EOS;
 	 * @return void
 	 **/
 
-	function do_flush_date($date) {
+	static function do_flush_date($date) {
 		static $done;
 		
 		$year = date('Y', $date);
@@ -757,7 +757,7 @@ EOS;
 	 * @return string $stats
 	 **/
 
-	function get_stats() {
+	static function get_stats() {
 		$date = date('Y-m-d @ H:i:s');
 		
 		$time_spent = ( 1000 * timer_stop() ) . 'ms';
@@ -796,7 +796,7 @@ EOS;
 	 * @return void
 	 **/
 	
-	function stats() {
+	static function stats() {
 		echo self::get_stats();
 	} # stats()
 	
@@ -808,7 +808,7 @@ EOS;
 	 * @return mixed $in
 	 **/
 
-	function flush_cache($in = null) {
+	static function flush_cache($in = null) {
 		foreach ( array(
 			'static_cache',
 			'memory_cache',

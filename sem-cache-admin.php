@@ -12,7 +12,7 @@ class sem_cache_admin {
 	 * @return void
 	 **/
 
-	function save_options() {
+	static function save_options() {
 		if ( !$_POST || !current_user_can('manage_options') )
 			return;
 		
@@ -119,7 +119,7 @@ class sem_cache_admin {
 	 * @return void
 	 **/
 
-	function edit_options() {
+	static function edit_options() {
 		echo '<div class="wrap">' . "\n"
 			. '<form method="post" action="">';
 		
@@ -530,7 +530,7 @@ class sem_cache_admin {
 	 * @return bool $can_memory
 	 **/
 
-	function can_memory() {
+	static function can_memory() {
 		static $can_memory;
 		if ( isset($can_memory) )
 			return $can_memory;
@@ -550,7 +550,7 @@ class sem_cache_admin {
 	 * @return bool $can_query
 	 **/
 
-	function can_query() {
+	static function can_query() {
 		static $can_query;
 		if ( isset($can_query) )
 			return $can_query;
@@ -568,7 +568,7 @@ class sem_cache_admin {
 	 * @return bool $can_object
 	 **/
 
-	function can_object() {
+	static function can_object() {
 		static $can_object;
 		if ( isset($can_object) )
 			return $can_object;
@@ -606,7 +606,7 @@ class sem_cache_admin {
 	 * @return bool $can_gzip
 	 **/
 
-	function can_gzip() {
+	static function can_gzip() {
 		static $can_gzip;
 		if ( isset($can_gzip) )
 			return $can_gzip;
@@ -631,7 +631,7 @@ class sem_cache_admin {
 	 * @return bool $success
 	 **/
 
-	function enable_static() {
+	static function enable_static() {
 		if ( !self::can_static() && !self::can_memory() )
 			return false;
 		
@@ -743,7 +743,7 @@ EOS;
 	 * @return void
 	 **/
 
-	function disable_static() {
+	static function disable_static() {
 		update_option('static_cache', 0);
 		update_option('memory_cache', 0);
 		
@@ -805,7 +805,7 @@ EOS;
 	 * @return bool $success
 	 **/
 
-	function enable_assets() {
+	static function enable_assets() {
 		if ( !self::can_assets() )
 			return false;
 		
@@ -824,7 +824,7 @@ EOS;
 	 * @return vodi
 	 **/
 
-	function disable_assets() {
+	static function disable_assets() {
 		update_option('asset_cache', 0);
 		
 		sem_cache::flush_assets();
@@ -837,7 +837,7 @@ EOS;
 	 * @return bool $success
 	 **/
 
-	function enable_gzip() {
+	static function enable_gzip() {
 		if ( !self::can_gzip() )
 			return false;
 		
@@ -868,7 +868,7 @@ EOS;
 	 * @return void
 	 **/
 
-	function disable_gzip() {
+	static function disable_gzip() {
 		update_option('gzip_cache', 0);
 		
 		# Enable rewrite rules
@@ -891,7 +891,7 @@ EOS;
 	 * @return bool $success
 	 **/
 
-	function enable_memcached() {
+	static function enable_memcached() {
 		if ( !self::can_object() )
 			return false;
 		
@@ -932,7 +932,7 @@ EOS;
 	 * @return void
 	 **/
 
-	function disable_memcached() {
+	static function disable_memcached() {
 		update_option('memory_cache', 0);
 		update_option('query_cache', 0);
 		update_option('object_cache', 0);

@@ -32,7 +32,7 @@ class cache_fs {
 	 * @return string $file
 	 **/
 
-	protected static function path_join($file) {
+	static protected function path_join($file) {
 		return rtrim(self::$base_dir . '/' . ltrim($file, '/'), '/');
 	} # path_join()
 	
@@ -141,7 +141,7 @@ class cache_fs {
 	 * @return bool $success
 	 **/
 
-	protected static function rm($dir, $timeout = false, $recursive = true) {
+	static protected function rm($dir, $timeout = false, $recursive = true) {
 		$dir = rtrim($dir, '/');
 		
 		if ( !file_exists($dir) )
@@ -175,7 +175,7 @@ class cache_fs {
 	 * @return array($total_pages, $expired_pages)
 	 **/
 
-	public static function stats($dir = '/', $timeout = false, $bucket = null) {
+	static function stats($dir = '/', $timeout = false, $bucket = null) {
 		static $total_pages = 0;
 		static $expired_pages = 0;
 		if ( !isset($bucket) ) {

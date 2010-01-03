@@ -477,7 +477,7 @@ class query_cache {
 	 * @return void
 	 **/
 
-	function pre_get_posts(&$wp_query) {
+	static function pre_get_posts(&$wp_query) {
 		self::$wp_query = $wp_query;
 		self::$found = false;
 	} # pre_get_posts()
@@ -490,7 +490,7 @@ class query_cache {
 	 * @return mixed $in
 	 **/
 
-	function flush($in = null) {
+	static function flush($in = null) {
 		wp_cache_delete(self::$cache_id, 'url2post_id');
 		wp_cache_delete(self::$cache_id, 'url2posts');
 		wp_cache_delete(self::$cache_id, 'url2posts_found');
