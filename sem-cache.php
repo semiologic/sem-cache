@@ -232,6 +232,7 @@ Header append Vary User-Agent env=!dont-vary
 Header append Vary Cookie env=!dont-vary
 </IfModule>
 
+
 EOS;
 		
 		$rules = $extra . $rules;
