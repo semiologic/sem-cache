@@ -15,7 +15,7 @@ foreach ( array(
 }
 
 if ( !defined('cache_timeout') )
-	define('cache_timeout', 14400);
+	define('cache_timeout', 43200);
 
 if ( static_cache && !class_exists('cache_fs') )
 	include dirname(__FILE__) . '/cache-fs.php';

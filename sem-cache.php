@@ -48,7 +48,7 @@ foreach ( array(
 }
 
 if ( !defined('cache_timeout') )
-	define('cache_timeout', 14400);
+	define('cache_timeout', 43200);
 
 class sem_cache {
 	/**
