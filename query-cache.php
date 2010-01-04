@@ -338,24 +338,31 @@ class query_cache {
 			if ( $results !== false )
 				return $results;
 			
-			if ( !isset($_GET['debug']) && !$_POST ) {
-				$results = self::$wpdb->get_results($query);
-				if ( $results ) {
-					update_post_cache($results);
-					$post_id = $results[0]->ID;
-				} else {
-					$post_id = 0;
-				}
-				
-				if ( !$post_id || $wp_query->is_feed )
-					$timeout = min(3600, cache_timeout);
-				elseif ( $wp_query->is_paged || self::$cache_id != md5(get_permalink($post_id)) )
-					$timout = cache_timeout;
-				else
-					$timeout = 0;
-				
-				wp_cache_add(self::$cache_id, $post_id, 'url2post_id', $timeout);
+			if ( isset($_GET['action']) || isset($_GET['doing_wp_cron'])
+				|| isset($_GET['debug']) || isset($_GET['preview'])
+				|| ( defined('WP_INSTALLING') && WP_INSTALLING )
+				|| ( defined('WP_ADMIN') && WP_ADMIN )
+				|| ( defined('DOING_CRON') && DOING_CRON )
+				|| ( defined('DOING_AJAX') && DOING_AJAX )
+				|| $_POST )
+				return $results;
+			
+			$results = self::$wpdb->get_results($query);
+			if ( $results ) {
+				update_post_cache($results);
+				$post_id = $results[0]->ID;
+			} else {
+				$post_id = 0;
 			}
+			
+			if ( !$post_id || $wp_query->is_feed )
+				$timeout = min(3600, cache_timeout);
+			elseif ( $wp_query->is_paged || self::$cache_id != md5(get_permalink($post_id)) )
+				$timout = cache_timeout;
+			else
+				$timeout = 0;
+			
+			wp_cache_add(self::$cache_id, $post_id, 'url2post_id', $timeout);
 		} else {
 			if ( !$wp_query->is_singular && is_user_logged_in() )
 				$query = self::maybe_strip_private_posts($query);
@@ -374,7 +381,13 @@ class query_cache {
 				return $results;
 			}
 			
-			if ( isset($_GET['debug']) || $_POST )
+			if ( isset($_GET['action']) || isset($_GET['doing_wp_cron'])
+				|| isset($_GET['debug']) || isset($_GET['preview'])
+				|| ( defined('WP_INSTALLING') && WP_INSTALLING )
+				|| ( defined('WP_ADMIN') && WP_ADMIN )
+				|| ( defined('DOING_CRON') && DOING_CRON )
+				|| ( defined('DOING_AJAX') && DOING_AJAX )
+				|| $_POST )
 				return $results;
 			
 			if ( $wp_query->is_home || $wp_query->is_category || $wp_query->is_tag || $wp_query->is_author || $wp_query->is_date || $wp_query->is_feed && !$wp_query->is_singular && !$wp_query->is_archive /* home feed */ ) {
