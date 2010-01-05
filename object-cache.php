@@ -205,7 +205,7 @@ class object_cache {
 			$key = $this->key($post->ID, 'posts');
 			$this->cache[$key] = $post;
 			
-			if ( $post->post_type == 'post' ) {
+			if ( class_exists('sem_cache') && $post->post_type == 'post' ) {
 				sem_cache::do_flush_author($post->post_author);
 				sem_cache::do_flush_date($post->post_date);
 			}
@@ -213,19 +213,23 @@ class object_cache {
 		
 		unset($posts);
 		
-		# flush get_permalink() intensive stuff before flushing terms
-		foreach ( $post_ids as $post_id )
-			sem_cache::do_flush_post($post_id);
-		
-		# flush home
-		sem_cache::do_flush_home();
+		if ( class_exists('sem_cache') ) {
+			# flush get_permalink() intensive stuff before flushing terms
+			foreach ( $post_ids as $post_id )
+				sem_cache::do_flush_post($post_id);
+
+			# flush home
+			sem_cache::do_flush_home();
+		}
 		
 		# flush terms
 		$terms = $wpdb->get_results("SELECT term_id, taxonomy FROM $wpdb->term_taxonomy WHERE count > 0");
 		$taxonomies = array();
 		$term_ids = array();
-		foreach ( $terms as $term )
-			sem_cache::do_flush_term($term->term_id, $term->taxonomy);
+		if ( class_exists('sem_cache') ) {
+			foreach ( $terms as $term )
+				sem_cache::do_flush_term($term->term_id, $term->taxonomy);
+		}
 		foreach ( $terms as $term ) {
 			$taxonomies[] = $term->taxonomy;
 			$term_ids[] = $term->term_id;
