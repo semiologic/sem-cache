@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: 2.0\n"
 "Report-Msgid-Bugs-To: https://tickets.semiologic.com\n"
-"POT-Creation-Date: 2010-01-02 14:13+0100\n"
+"POT-Creation-Date: 2010-01-05 13:07+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -326,23 +326,31 @@ msgstr ""
 msgid "Save Changes"
 msgstr ""
 
-#: sem-cache-admin.php:648
+#: sem-cache-admin.php:651
 #, php-format
 msgid "Error: Failed to create %s."
 msgstr ""
 
-#: sem-cache-admin.php:680 sem-cache-admin.php:913
+#: sem-cache-admin.php:683 sem-cache-admin.php:919
 #, php-format
 msgid "Error: Failed to write %s."
 msgstr ""
 
-#: sem-cache-admin.php:726 sem-cache-admin.php:764
+#: sem-cache-admin.php:729 sem-cache-admin.php:770
 msgid "Error: Failed to override the WP_CACHE define in wp-config.php."
 msgstr ""
 
-#: sem-cache-admin.php:774 sem-cache-admin.php:938
+#: sem-cache-admin.php:780 sem-cache-admin.php:944
 #, php-format
 msgid "Error: Failed to delete %s."
+msgstr ""
+
+#: sem-cache-info.php:2
+msgid "Semiologic Cache"
+msgstr ""
+
+#: sem-cache-info.php:3
+msgid "An advanced caching module for WordPress."
 msgstr ""
 
 #: sem-cache.php:62 sem-cache.php:63 sem-cache.php:83
