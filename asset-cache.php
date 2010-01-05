@@ -82,7 +82,7 @@ class asset_cache {
 					$src
 					);
 			}
-			$css[$base] = file_get_contents($src);
+			$css[$base] = self::strip_bom(file_get_contents($src));
 		}
 		
 		foreach ( $css as $base => &$style ) {
@@ -242,11 +242,40 @@ class asset_cache {
 					$src
 					);
 			}
-			$js[] = file_get_contents($src);
+			$js[] = self::strip_bom(file_get_contents($src));
 		}
 		
 		cache_fs::put_contents($file, implode("\n\n", $js));
 	} # concat_scripts()
+	
+	
+	/**
+	 * strip_bom()
+	 *
+	 * @param string $str
+	 * @return string $str
+	 **/
+
+	function strip_bom($str) {
+		if ( preg_match('{^\x0\x0\xFE\xFF}', $str) ) {
+			# UTF-32 Big Endian BOM
+			$str = substr($str, 4);
+		} elseif ( preg_match('{^\xFF\xFE\x0\x0}', $str) ) {
+			# UTF-32 Little Endian BOM
+			$str = substr($str, 4);
+		} elseif ( preg_match('{^\xFE\xFF}', $str) ) {
+			# UTF-16 Big Endian BOM
+			$str = substr($str, 2);
+		} elseif ( preg_match('{^\xFF\xFE}', $str) ) {
+			# UTF-16 Little Endian BOM
+			$str = substr($str, 2);
+		} elseif ( preg_match('{^\xEF\xBB\xBF}', $str) ) {
+			# UTF-8 BOM
+			$str = substr($str, 3);
+		}
+		
+		return $str;
+	} # strip_bom()
 } # asset_cache
 
 if ( !SCRIPT_DEBUG ) {
