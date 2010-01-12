@@ -3,7 +3,7 @@
 Plugin Name: Semiologic Cache
 Plugin URI: http://www.semiologic.com/software/sem-cache/
 Description: An advanced caching module for WordPress.
-Version: 2.0
+Version: 2.0.1 beta
 Author: Denis de Bernardy
 Author URI: http://www.getsemiologic.com
 Text Domain: sem-cache
@@ -228,8 +228,8 @@ AddDefaultCharset $encoding
 
 <IfModule mod_headers.c>
 # Make sure proxies don't deliver the wrong content
-Header append Vary User-Agent env=!dont-vary
-Header append Vary Cookie env=!dont-vary
+Header append Vary User-Agent
+Header append Vary Cookie
 </IfModule>
 
 
