@@ -42,6 +42,7 @@ The [Semiologic forum](http://forum.semiologic.com) is the best place to report 
 = 2.0.1 =
 
 - Fix Apache 1.3 quirks
+- Improve safe_mode and open_basedir handling
 
 = 2.0 =
 

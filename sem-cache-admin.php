@@ -154,7 +154,7 @@ class sem_cache_admin {
 			$query_errors[] = $error;
 		}
 		
-		if ( @ini_get('safe_mode') || @ini_get('open_basedir') ) {
+		if ( ( @ini_get('safe_mode') || @ini_get('open_basedir') ) && !wp_mkdir_p(WP_CONTENT_DIR . '/cache') ) {
 			$error = __('Safe mode or an open_basedir restriction is enabled on your server.', 'sem-cache');
 			$static_errors[] = $error;
 			$assets_errors[] = $error;
@@ -455,13 +455,14 @@ class sem_cache_admin {
 		if ( isset($can_static) )
 			return $can_static;
 		
-		$can_static = !ini_get('safe_mode') && !ini_get('open_basedir')
-			&& ( !get_option('permalink_structure') || is_writable(ABSPATH . '.htaccess') )
+		$can_static = ( !get_option('permalink_structure') || is_writable(ABSPATH . '.htaccess') )
 			&& ( defined('WP_CACHE') && WP_CACHE || is_writable(ABSPATH . 'wp-config.php') )
 			&& ( !file_exists(WP_CONTENT_DIR . '/advanced-cache.php')
 				|| is_writable(WP_CONTENT_DIR . '/advanced-cache.php') )
 			&& ( !file_exists(WP_CONTENT_DIR . '/cache') && is_writable(WP_CONTENT_DIR)
-				|| is_dir(WP_CONTENT_DIR . '/cache') && is_writable(WP_CONTENT_DIR . '/cache') );
+				|| is_dir(WP_CONTENT_DIR . '/cache') && is_writable(WP_CONTENT_DIR . '/cache') )
+			&& 	( !@ini_get('safe_mode') && !@ini_get('open_basedir')
+				|| wp_mkdir_p(WP_CONTENT_DIR . '/cache') );
 		
 		return $can_static;
 	} # can_static()
@@ -592,9 +593,10 @@ class sem_cache_admin {
 		if ( isset($can_assets) )
 			return $can_assets;
 		
-		$can_assets = !@ini_get('safe_mode') && !@ini_get('open_basedir')
-			&& ( !file_exists(WP_CONTENT_DIR . '/cache') && is_writable(WP_CONTENT_DIR)
-				|| is_dir(WP_CONTENT_DIR . '/cache') && is_writable(WP_CONTENT_DIR . '/cache') );
+		$can_assets = ( !file_exists(WP_CONTENT_DIR . '/cache') && is_writable(WP_CONTENT_DIR)
+					|| is_dir(WP_CONTENT_DIR . '/cache') && is_writable(WP_CONTENT_DIR . '/cache') )
+				&& ( !@ini_get('safe_mode') && !@ini_get('open_basedir')
+					|| wp_mkdir_p(WP_CONTENT_DIR . '/cache') );
 		
 		return $can_assets;
 	} # can_assets()
