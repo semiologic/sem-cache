@@ -73,7 +73,7 @@ class static_cache {
 		$protocol = $_SERVER["SERVER_PROTOCOL"];
 		if ( 'HTTP/1.1' != $protocol && 'HTTP/1.0' != $protocol )
 			$protocol = 'HTTP/1.0';
-		$status_header = "$protocol $header $text";
+		$status_header = "$protocol $status_code $text";
 		if ( function_exists('apply_filters') )
 			$status_header = apply_filters('status_header', $status_header, $header, $text, $protocol);
 		
