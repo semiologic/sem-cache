@@ -187,7 +187,7 @@ class object_cache {
 			static_cache::disable();
 		
 		# flush posts
-		$posts = $wpdb->get_results("SELECT ID, post_title, post_name, post_date, post_type, post_status, post_author FROM $wpdb->posts WHERE post_status IN ('publish', 'private') OR post_type = 'attachment'");
+		$posts = $wpdb->get_results("SELECT ID, post_title, post_name, post_date, post_type, post_status, post_author, post_parent FROM $wpdb->posts WHERE post_status IN ('publish', 'private') OR post_type = 'attachment'");
 		
 		# force WP widgets to flush
 		wp_cache_delete('widget_recent_posts', 'widget');

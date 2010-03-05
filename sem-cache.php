@@ -592,11 +592,15 @@ EOS;
 		static $permalink_structure;
 		if ( !isset($permalink_structure) )
 			$permalink_structure = get_option('permalink_structure');
+		
+		$post = get_post($post_id);
 		$old = wp_cache_get($post_id, 'pre_flush_post');
 		
 		$links = array();
 		$links[] = apply_filters('the_permalink', get_permalink($post_id));
-		$pages = preg_match("/<!--nextpage-->/", $post->post_content);
+		$pages = isset($post->post_content)
+			? preg_match("/<!--nextpage-->/", $post->post_content)
+			: 1;
 		if ( $old ) {
 			$links[] = $old['permalink'];
 			$pages = max($pages, preg_match("/<!--nextpage-->/", $old['post_content']));
@@ -682,18 +686,18 @@ EOS;
 		$done[$taxonomy][$term_id] = true;
 		
 		if ( $taxonomy == 'category' )
-			$link = get_category_link($tag_id);
+			$link = @get_category_link($term_id);
 		else
-			$link = get_tag_link($tag_id);
-		if ( is_wp_error($link) )
+			$link = @get_tag_link($term_id);
+		if ( is_wp_error($link) || !$link )
 			return;
 		self::flush_url($link);
 		
 		foreach ( array('rss2', 'atom') as $feed ) {
 			if ( $taxonomy == 'category' )
-				$link = get_category_feed_link($tag_id, $feed);
+				$link = get_category_feed_link($term_id, $feed);
 			else
-				$link = get_tag_feed_link($tag_id, $feed);
+				$link = get_tag_feed_link($term_id, $feed);
 			$link = str_replace('&amp;', '&', $link);
 			self::flush_feed_url($link);
 		}
@@ -732,6 +736,11 @@ EOS;
 
 	static function do_flush_date($date) {
 		static $done;
+		
+		if ( !is_numeric($date) )
+			$date = @strtotime($date);
+		if ( !$date )
+			return;
 		
 		$year = date('Y', $date);
 		$month = date('m', $date);

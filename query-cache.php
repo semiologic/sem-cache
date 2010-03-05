@@ -220,7 +220,9 @@ class query_cache {
 		global $wp_the_query;
 		$results = false;
 		
-		if ( self::$wp_query === $wp_the_query && self::$wp_query->request === $query ) {
+		if ( !isset($wp_the_query) ) {
+			return self::$wpdb->get_results($query);
+		} elseif ( self::$wp_query === $wp_the_query && self::$wp_query->request === $query ) {
 			$results = $this->get_posts($query);
 		} elseif ( $wp_the_query->is_page && !$wp_the_query->in_the_loop && preg_match("/^SELECT ID, post_name, post_parent FROM $wpdb->posts WHERE post_name = '[^']+' AND \(post_type = 'page' OR post_type = 'attachment'\)$/", $query) ) {
 			$results = $this->get_page_by_path($query);
@@ -358,7 +360,7 @@ class query_cache {
 			if ( !$post_id || $wp_query->is_feed )
 				$timeout = min(3600, cache_timeout);
 			elseif ( $wp_query->is_paged || self::$cache_id != md5(get_permalink($post_id)) )
-				$timout = cache_timeout;
+				$timeout = cache_timeout;
 			else
 				$timeout = 0;
 			
@@ -397,7 +399,7 @@ class query_cache {
 				if ( !$results || $wp_query->is_feed || redirect_canonical(null, false) )
 					$timeout = min(3600, cache_timeout);
 				elseif ( $wp_query->is_paged )
-					$timout = cache_timeout;
+					$timeout = cache_timeout;
 				else
 					$timeout = 0;
 				
