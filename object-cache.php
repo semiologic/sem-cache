@@ -88,6 +88,9 @@ class object_cache {
 	var $default_expiration = 0;
 	
 	var $flush = false;
+	
+	var $cache_hits = 0;
+	var $cache_misses = 0;
 
 	function add($id, $data, $group = 'default', $expire = 0) {
 		$key = $this->key($id, $group);
@@ -399,7 +402,13 @@ class object_cache {
 		foreach ( $buckets as $bucket => $servers ) {
 			$this->mc[$bucket] = new Memcache();
 			foreach ( $servers as $server  ) {
-				list ( $node, $port ) = explode(':', $server);
+				$server = explode(':', $server);
+				if ( count($server) == 2 ) {
+					list($node, $port) = $server;
+				} else {
+					$node = current($server);
+					$port = false;
+				}
 				if ( !$port )
 					$port = ini_get('memcache.default_port');
 				$port = intval($port);

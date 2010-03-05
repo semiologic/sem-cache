@@ -506,7 +506,13 @@ class sem_cache_admin {
 		foreach ( $buckets as $bucket => $servers) {
 			$test = new Memcache();
 			foreach ( $servers as $server  ) {
-				list ( $node, $port ) = explode(':', $server);
+				$server = explode(':', $server);
+				if ( count($server) == 2 ) {
+					list($node, $port) = $server;
+				} else {
+					$node = current($server);
+					$port = false;
+				}
 				if ( !$port )
 					$port = ini_get('memcache.default_port');
 				$port = intval($port);
