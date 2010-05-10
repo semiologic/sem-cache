@@ -39,6 +39,10 @@ The [Semiologic forum](http://forum.semiologic.com) is the best place to report 
 
 == Change Log ==
 
+= 2.0.2 =
+
+- WP 3.0 compat
+
 = 2.0.1 =
 
 - Fix Apache 1.3 quirks
