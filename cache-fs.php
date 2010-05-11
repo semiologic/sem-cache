@@ -19,7 +19,7 @@ class cache_fs {
 		if ( strpos($_SERVER['HTTP_HOST'], '/') !== false )
 			trigger_error(sprintf('%s is not a valid hostname', $_SERVER['HTTP_HOST']), E_USER_ERROR);
 		
-		self::$base_dir = function_exists('is_site_admin') && defined('VHOST') && VHOST && VHOST != 'off'
+		self::$base_dir = defined('SUBDOMAIN_INSTALL') && SUBDOMAIN_INSTALL
 			? WP_CONTENT_DIR . '/cache/' . $_SERVER['HTTP_HOST']
 			: WP_CONTENT_DIR . '/cache';
 	} # start()

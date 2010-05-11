@@ -121,7 +121,7 @@ class sem_cache {
 			$cache_url = parse_url(WP_CONTENT_URL . '/cache/static');
 			$cache_url = $cache_url['path'];
 			
-			if ( function_exists('is_site_admin') && defined('VHOST') && VHOST && VHOST != 'off' ) {
+			if ( defined('SUBDOMAIN_INSTALL') && SUBDOMAIN_INSTALL ) {
 				$cache_dir .= '/' . $_SERVER['HTTP_HOST'];
 				$cache_url .= '/' . $_SERVER['HTTP_HOST'];
 			}
