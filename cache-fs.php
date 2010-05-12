@@ -128,6 +128,9 @@ class cache_fs {
 	 **/
 	
 	static function flush($dir = '/', $timeout = false, $recursive = true) {
+		if ( function_exists('is_multisite') && is_multisite() )
+			return false;
+		
 		return self::rm(self::path_join($dir), $timeout, $recursive);
 	} # flush()
 	

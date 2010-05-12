@@ -3,7 +3,7 @@
 Plugin Name: Semiologic Cache
 Plugin URI: http://www.semiologic.com/software/sem-cache/
 Description: An advanced caching module for WordPress.
-Version: 2.0.2 RC
+Version: 2.1 alpha
 Author: Denis de Bernardy
 Author URI: http://www.getsemiologic.com
 Text Domain: sem-cache
@@ -44,7 +44,7 @@ foreach ( array(
 	'memory_cache',
 	) as $const ) {
 	if ( !defined($const) )
-		define($const, get_option($const) && defined('WP_CACHE') && WP_CACHE);
+		define($const, get_site_option($const) && defined('WP_CACHE') && WP_CACHE);
 }
 
 if ( !defined('cache_timeout') )
@@ -58,6 +58,9 @@ class sem_cache {
 	 **/
 
 	static function admin_menu() {
+		if ( function_exists('is_super_admin') && !is_super_admin() )
+			return;
+		
 		add_options_page(
 			__('Cache', 'sem-cache'),
 			__('Cache', 'sem-cache'),
@@ -75,6 +78,9 @@ class sem_cache {
 	 **/
 
 	static function front_menu() {
+		if ( function_exists('is_super_admin') && !is_super_admin() )
+			return;
+		
 		if ( !current_user_can('manage_options') )
 			return;
 		
@@ -116,7 +122,7 @@ class sem_cache {
 	 **/
 
 	static function rewrite_rules($rules) {
-		if ( (bool) get_option('static_cache') ) {
+		if ( (bool) get_site_option('static_cache') ) {
 			$cache_dir = WP_CONTENT_DIR . '/cache/static';
 			$cache_url = parse_url(WP_CONTENT_URL . '/cache/static');
 			$cache_url = $cache_url['path'];
@@ -179,7 +185,7 @@ EOS;
 			}
 		}
 		
-		if ( (bool) get_option('gzip_cache') ) {
+		if ( (bool) get_site_option('gzip_cache') ) {
 			$extra = <<<EOS
 
 <IfModule mod_deflate.c>
@@ -218,7 +224,7 @@ EOS;
 			$rules = $extra . $rules;
 		}
 		
-		$encoding = get_option('blog_charset');
+		$encoding = get_site_option('blog_charset');
 		if ( !$encoding )
 			$encoding = 'utf-8';
 		
@@ -786,7 +792,7 @@ EOS;
 		
 		global $wpdb;
 		$queries = get_num_queries();
-		if ( get_option('query_cache') && !is_admin() ) {
+		if ( get_site_option('query_cache') && !is_admin() ) {
 			$queries += $wpdb->cache_hits;
 			$stats .= " Query Cache: $wpdb->cache_hits hits / $queries.";
 		} else {
@@ -796,7 +802,10 @@ EOS;
 		global $wp_object_cache;
 		$stats .= " Object Cache: $wp_object_cache->cache_hits hits / " . ( $wp_object_cache->cache_hits + $wp_object_cache->cache_misses ) . ".";
 		
-		if ( ( sem_cache_debug || !is_admin() && current_user_can('manage_options') ) && !is_feed() )
+		if ( !is_feed() &&
+			( sem_cache_debug || !is_admin() ) &&
+			current_user_can('manage_options') &&
+			( !function_exists('is_super_admin') || is_super_admin() ) )
 			return "\n<p style='$style'>$stats</p>";
 		elseif ( sem_cache_debug )
 			return "\n<!-- $stats -->";
@@ -844,10 +853,10 @@ if ( !class_exists('cache_fs') )
 	include dirname(__FILE__) . '/cache-fs.php';
 
 if ( !is_admin() ) {
-	if ( get_option('query_cache') )
+	if ( get_site_option('query_cache') )
 		include dirname(__FILE__) . '/query-cache.php';
 
-	if ( get_option('asset_cache') )
+	if ( get_site_option('asset_cache') )
 		include dirname(__FILE__) . '/asset-cache.php';
 }
 
@@ -878,7 +887,7 @@ function sem_cache_admin() {
 foreach ( array('load-settings_page_sem-cache') as $hook )
 	add_action($hook, 'sem_cache_admin');
 
-if ( static_cache || memory_cache || get_option('query_cache') ) :
+if ( static_cache || memory_cache || get_site_option('query_cache') ) :
 
 add_action('pre_post_update', array('sem_cache', 'pre_flush_post'));
 

@@ -170,7 +170,7 @@ class object_cache {
 
 		return $result; 
 	}
-
+	
 	function flush() {
 		static $done = false;
 		if ( $done )

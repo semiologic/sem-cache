@@ -196,6 +196,9 @@ class static_cache {
 		#var_dump($_SERVER);
 		#die;
 		
+		# kill static cache on multisite installs
+		self::$static &= !( function_exists('is_multisite') && is_multisite() );
+		
 		if ( self::$started || headers_sent() || !self::$static && !self::$memory )
 			return;
 		
@@ -219,7 +222,7 @@ class static_cache {
 					echo $buffer;
 				die;
 			}
-		} else {
+		} elseif ( !( function_exists('is_multisite') && is_multisite() ) ) {
 			# poor man's memcached
 			$headers = '/semi-static/' . $cache_id . '.meta';
 			
@@ -331,7 +334,7 @@ class static_cache {
 			wp_cache_add($cache_id, $headers, 'cached_headers', cache_timeout);
 			if ( $buffer && !in_array(self::$status_code, array(301, 302)) )
 				wp_cache_add($cache_id, $buffer, 'cached_buffers', cache_timeout);
-		} else {
+		} elseif ( !( function_exists('is_multisite') && is_multisite() ) ) {
 			 # poor man's memcached
 			$cache_id = $host . preg_replace("/#.*/", '', $_SERVER['REQUEST_URI']);
 			$cache_id = md5($cache_id);

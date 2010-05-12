@@ -16,6 +16,9 @@ class sem_cache_admin {
 		if ( !$_POST || !current_user_can('manage_options') )
 			return;
 		
+		if ( function_exists('is_super_admin') && !is_super_admin() )
+			return;
+		
 		check_admin_referer('sem_cache');
 		
 		$timeout = false;
@@ -24,6 +27,17 @@ class sem_cache_admin {
 			$timeout = cache_timeout;
 		
 		case 'flush':
+			if ( function_exists('is_multisite') && is_multisite() ) {
+				echo '<div class="error">' . "\n"
+					. '<p>'
+						. '<strong>'
+						. __('On multisite installations, the cache can only be bulk-flushed manually.', 'sem-cache')
+						. '</strong>'
+					. '</p>'
+					. '</div>' . "\n";
+				break;
+			}
+			
 			if ( !$timeout )
 				cache_fs::flush('/assets/');
 			cache_fs::flush('/static/', $timeout);
@@ -79,12 +93,14 @@ class sem_cache_admin {
 				$gzip_cache = $can_gzip;
 			}
 			
-			update_option('static_cache', (int) $static_cache);
-			update_option('memory_cache', (int) $memory_cache);
-			update_option('query_cache', (int) $query_cache);
-			update_option('object_cache', (int) $object_cache);
-			update_option('asset_cache', (int) $asset_cache);
-			update_option('gzip_cache', (int) $gzip_cache);
+			$static_static &= !( function_exists('is_multisite') && is_multisite() );
+			
+			update_site_option('static_cache', (int) $static_cache);
+			update_site_option('memory_cache', (int) $memory_cache);
+			update_site_option('query_cache', (int) $query_cache);
+			update_site_option('object_cache', (int) $object_cache);
+			update_site_option('asset_cache', (int) $asset_cache);
+			update_site_option('gzip_cache', (int) $gzip_cache);
 			
 			#dump($static_cache, $memory_cache, $query_cache, $object_cache, $asset_cache, $gzip_cache);
 			
@@ -102,7 +118,7 @@ class sem_cache_admin {
 				. '</div>' . "\n";
 			break;
 			
-			if ( !get_option('object_cache') && class_exists('object_cache') ) {
+			if ( !get_site_option('object_cache') && class_exists('object_cache') ) {
 				# do a hard object flush
 				wp_cache_flush();
 			}
@@ -160,7 +176,7 @@ class sem_cache_admin {
 			$assets_errors[] = $error;
 		}
 		
-		if ( !( !get_option('permalink_structure') || is_writable(ABSPATH . '.htaccess') ) ) {
+		if ( !( !get_option('permalink_structure') || is_writable(ABSPATH . '.htaccess') ) && !( function_exists() && is_multisite() ) ) {
 			$error = __('WP cannot overwrite your site\'s .htaccess file to insert new rewrite rules. The file needs to be writable by your server.', 'sem-cache');
 			$static_errors[] = $error;
 		}
@@ -203,6 +219,12 @@ class sem_cache_admin {
 		} else {
 			# just assume it works
 			$gzip_notice[] = __('gzip caching requires mod_deflate and mod_headers, but the Semiologic Cache plugin cannot determine whether they are installed on your server. Please check with your host.', 'sem-cache');
+		}
+		
+		if ( function_exists('is_multisite') && is_multisite() ) {
+			$static_errors = array(
+				__('The filesystem-based cache cannot be enabled on multisite installations.', 'sem-cache'),
+				);
 		}
 		
 		foreach ( array(
@@ -264,7 +286,7 @@ class sem_cache_admin {
 			. '<label>'
 			. '<input type="checkbox"'
 				. ' id="static_cache" name="static_cache"'
-				. checked((bool) get_option('static_cache'), true, false)
+				. checked((bool) get_site_option('static_cache'), true, false)
 				. ( $static_errors
 					? ' disabled="disabled"'
 					: ''
@@ -278,7 +300,7 @@ class sem_cache_admin {
 			. '<label>'
 			. '<input type="checkbox"'
 				. ' id="memory_cache" name="memory_cache"'
-				. checked((bool) get_option('memory_cache'), true, false)
+				. checked((bool) get_site_option('memory_cache'), true, false)
 				. ( $memory_errors
 					? ' disabled="disabled"'
 					: ''
@@ -317,7 +339,7 @@ class sem_cache_admin {
 			. '<label>'
 			. '<input type="checkbox"'
 				. ' id="query_cache" name="query_cache"'
-				. checked((bool) get_option('query_cache'), true, false)
+				. checked((bool) get_site_option('query_cache'), true, false)
 				. ( $query_errors
 					? ' disabled="disabled"'
 					: ''
@@ -349,7 +371,7 @@ class sem_cache_admin {
 			. '<label>'
 			. '<input type="checkbox"'
 				. ' id="object_cache" name="object_cache"'
-				. checked((bool) get_option('object_cache'), true, false)
+				. checked((bool) get_site_option('object_cache'), true, false)
 				. ( $object_errors
 					? ' disabled="disabled"'
 					: ''
@@ -381,7 +403,7 @@ class sem_cache_admin {
 			. '<label>'
 			. '<input type="checkbox"'
 				. ' id="asset_cache" name="asset_cache"'
-				. checked((bool) get_option('asset_cache'), true, false)
+				. checked((bool) get_site_option('asset_cache'), true, false)
 				. ( $assets_errors
 					? ' disabled="disabled"'
 					: ''
@@ -410,7 +432,7 @@ class sem_cache_admin {
 			. '<label>'
 			. '<input type="checkbox"'
 				. ' id="gzip_cache" name="gzip_cache"'
-				. checked((bool) get_option('gzip_cache'), true, false)
+				. checked((bool) get_site_option('gzip_cache'), true, false)
 				. ( $gzip_errors
 					? ' disabled="disabled"'
 					: ''
@@ -462,7 +484,8 @@ class sem_cache_admin {
 			&& ( !file_exists(WP_CONTENT_DIR . '/cache') && is_writable(WP_CONTENT_DIR)
 				|| is_dir(WP_CONTENT_DIR . '/cache') && is_writable(WP_CONTENT_DIR . '/cache') )
 			&& 	( !@ini_get('safe_mode') && !@ini_get('open_basedir')
-				|| wp_mkdir_p(WP_CONTENT_DIR . '/cache') );
+				|| wp_mkdir_p(WP_CONTENT_DIR . '/cache') )
+			&& !( function_exists('is_multisite') && is_multisite() );
 		
 		return $can_static;
 	} # can_static()
@@ -752,8 +775,8 @@ EOS;
 	 **/
 
 	static function disable_static() {
-		update_option('static_cache', 0);
-		update_option('memory_cache', 0);
+		update_site_option('static_cache', 0);
+		update_site_option('memory_cache', 0);
 		
 		wp_clear_scheduled_hook('cache_timeout');
 		wp_clear_scheduled_hook('static_cache_timeout');
@@ -833,7 +856,7 @@ EOS;
 	 **/
 
 	static function disable_assets() {
-		update_option('asset_cache', 0);
+		update_site_option('asset_cache', 0);
 		
 		sem_cache::flush_assets();
 	} # disable_assets()
@@ -877,7 +900,7 @@ EOS;
 	 **/
 
 	static function disable_gzip() {
-		update_option('gzip_cache', 0);
+		update_site_option('gzip_cache', 0);
 		
 		# Enable rewrite rules
 		if ( !function_exists('save_mod_rewrite_rules') || !function_exists('get_home_path') )
@@ -941,9 +964,9 @@ EOS;
 	 **/
 
 	static function disable_memcached() {
-		update_option('memory_cache', 0);
-		update_option('query_cache', 0);
-		update_option('object_cache', 0);
+		update_site_option('memory_cache', 0);
+		update_site_option('query_cache', 0);
+		update_site_option('object_cache', 0);
 		
 		if ( file_exists(WP_CONTENT_DIR . '/object-cache.php')
 			&& !unlink(WP_CONTENT_DIR . '/object-cache.php') ) {
