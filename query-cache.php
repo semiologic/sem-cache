@@ -440,7 +440,9 @@ class query_cache {
 				$strip = " OR $wpdb->posts.post_author = $user->ID AND $wpdb->posts.post_status = 'private'";
 			}
 			
-			$posts_request = str_replace($strip, '', $posts_request);
+			if ($strip) {
+			    $posts_request = str_replace($strip, '', $posts_request);
+			}
 		}
 		
 		return $posts_request;
