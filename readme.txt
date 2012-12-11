@@ -1,5 +1,5 @@
 === Semiologic Cache ===
-Contributors: Denis-de-Bernardy
+Contributors: Denis-de-Bernardy && Mike Koepke
 Donate link: http://www.semiologic.com/partners/
 Tags: semiologic
 Requires at least: 3.0
@@ -39,10 +39,11 @@ The [Semiologic forum](http://forum.semiologic.com) is the best place to report 
 
 == Change Log ==
 
-= 2.2.2 =
+= 2.3 =
 
 - Updated mobile agent detection Opera and Android Tablets
-- Asset cache is now cleared when cache is flushed based on site update
+- Asset cache is now cleared when Scripts & Meta is updated, theme is switched
+  or plugins are activated/deactivated
 - Flush cache on Profile update due to Google+ Authorship
 - Fix warning message deleting non-existent file.  Seems to be PHP 5.3 issue
 
