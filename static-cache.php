@@ -195,7 +195,8 @@ class static_cache {
 		$mobile_agents = implode("|", $mobile_agents);
 		if ( preg_match("{($mobile_agents)}", $_SERVER['HTTP_USER_AGENT']) )
 			return;
-		
+		if ( preg_match("/(?=.*?\bandroid\b)(?=.*?\bmobile\b).*$/i", $_SERVER['HTTP_USER_AGENT']) )
+			return;                	
 		#header("Content-Type: text/plain");
 		#var_dump($_SERVER);
 		#die;
@@ -315,7 +316,9 @@ class static_cache {
 		$mobile_agents = implode("|", $mobile_agents);
 		if ( preg_match("{($mobile_agents)}", $_SERVER['HTTP_USER_AGENT']) )
 			return $buffer;
-		
+		if ( preg_match("/(?=.*?\bandroid\b)(?=.*?\bmobile\b).*$/i", $_SERVER['HTTP_USER_AGENT']) )
+			return $buffer;  
+                
 		if ( self::$static ) {
 			$file = preg_replace("/#.*/", '', $_SERVER['REQUEST_URI']);
 			$file = '/static/' . trim($file, '/');

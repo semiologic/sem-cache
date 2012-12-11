@@ -2,8 +2,8 @@
 Contributors: Denis-de-Bernardy
 Donate link: http://www.semiologic.com/partners/
 Tags: semiologic
-Requires at least: 2.8
-Tested up to: 3.4
+Requires at least: 3.0
+Tested up to: 3.5
 Stable tag: trunk
 
 A high performance cache for WordPress.
@@ -38,6 +38,14 @@ The [Semiologic forum](http://forum.semiologic.com) is the best place to report 
 
 
 == Change Log ==
+
+= 2.2.2 =
+
+- Updated mobile agent detection Opera and Android Tablets
+- Asset cache is now cleared when cache is flushed based on site update
+- Flush cache on Profile update due to Google+ Authorship
+- Fix warning message deleting non-existent file.  Seems to be PHP 5.3 issue
+
 
 = 2.2 =
 

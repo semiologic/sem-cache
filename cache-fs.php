@@ -150,8 +150,11 @@ class cache_fs {
 		if ( !file_exists($dir) )
 			return true;
 		
-		if ( !is_dir($dir) )
-			return ( $timeout && ( filemtime($dir) + $timeout >= time() ) ) || unlink($dir);
+		if ( !is_dir($dir) ) {
+			$success = ( $timeout && ( filemtime($dir) + $timeout >= time() ) ) || unlink($dir);
+                        clearstatcache(); 
+                        return $success;
+                }        
 		elseif ( !$recursive )
 			return is_file("$dir/index.html") ? self::rm("$dir/index.html", $timeout, $recursive) : true;
 		

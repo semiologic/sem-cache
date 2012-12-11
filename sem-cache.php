@@ -3,8 +3,8 @@
 Plugin Name: Semiologic Cache
 Plugin URI: http://www.semiologic.com/software/sem-cache/
 Description: An advanced caching module for WordPress.
-Version: 2.2.1
-Author: Denis de Bernardy
+Version: 2.2.2
+Author: Denis de Bernardy & Mike Koepke
 Author URI: http://www.getsemiologic.com
 Text Domain: sem-cache
 Domain Path: /lang
@@ -170,6 +170,7 @@ class sem_cache {
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond $cache_dir%{REQUEST_URI}index.html -f
 RewriteCond %{HTTP_USER_AGENT} "!($mobile_agents)" [NC]
+RewriteCond %{HTTP_USER_AGENT} "!(?=.*?\bandroid\b)(?=.*?\bmobile\b).*$" [NC]    
 $cache_cookies
 RewriteCond %{QUERY_STRING} ^$
 RewriteCond %{THE_REQUEST} ^GET
@@ -182,6 +183,7 @@ EOS;
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond $cache_dir%{REQUEST_URI} -f
 RewriteCond %{HTTP_USER_AGENT} "!($mobile_agents)" [NC]
+RewriteCond %{HTTP_USER_AGENT} "!(?=.*?\bandroid\b)(?=.*?\bmobile\b).*$" [NC]    
 $cache_cookies
 RewriteCond %{QUERY_STRING} ^$
 RewriteCond %{THE_REQUEST} ^GET
@@ -190,6 +192,7 @@ RewriteRule ^ $cache_url%{REQUEST_URI} [L]
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond $cache_dir%{REQUEST_URI}.html -f
 RewriteCond %{HTTP_USER_AGENT} "!($mobile_agents)" [NC]
+RewriteCond %{HTTP_USER_AGENT} "!(?=.*?\bandroid\b)(?=.*?\bmobile\b).*$" [NC]    
 $cache_cookies
 RewriteCond %{QUERY_STRING} ^$
 RewriteCond %{THE_REQUEST} ^GET
@@ -475,10 +478,10 @@ EOS;
 			'iPod',
 			'aspen',
 			'dream',
-			'android',
 			'BlackBerry',
                         'iemobile',
-                        'opera mobile',
+                        'opera mobi',
+                        'opera mini',
                         'palmos',
                         'webos', 
                         'googlebot-mobile'
@@ -1025,6 +1028,7 @@ EOS;
 			) as $ops )
 			add_option($ops, '0');
 		self::flush_static();
+                self::flush_assets();
 		return $in;
 	} # flush_cache()
 } # sem_cache
@@ -1096,6 +1100,7 @@ foreach ( array(
 	'update_option_sem5_options',
 	'update_option_sem6_options',
 	'generate_rewrite_rules',
+        'profile_update',
 	
 	'flush_cache',
 	'after_db_upgrade',
