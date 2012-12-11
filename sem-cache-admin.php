@@ -93,7 +93,7 @@ class sem_cache_admin {
 				$gzip_cache = $can_gzip;
 			}
 			
-			$static_static &= !( function_exists('is_multisite') && is_multisite() );
+//			$static_static &= !( function_exists('is_multisite') && is_multisite() );
 			
 			update_site_option('static_cache', (int) $static_cache);
 			update_site_option('memory_cache', (int) $memory_cache);
@@ -464,7 +464,50 @@ class sem_cache_admin {
 		echo '</form>' . "\n"
 			. '</div>' . "\n";
 	} # edit_options()
-	
+
+        
+ 	/**
+	 * enable_caching()
+	 *
+	 * @return void
+	 **/
+
+	static function enable_caching() { 
+
+            $can_static = self::can_static();
+            $can_memcached = self::can_memcached();
+            $can_query = self::can_query();
+            $can_assets = self::can_assets();
+            $can_gzip = self::can_gzip();
+
+            $static_cache = $can_static;
+            $memory_cache = $can_memcached;
+            $query_cache = $can_query;
+            $object_cache = $can_memcached;
+            $asset_cache = $can_assets;
+            $gzip_cache = $can_gzip;
+
+            update_site_option('static_cache', (int) $static_cache);
+            update_site_option('memory_cache', (int) $memory_cache);
+            update_site_option('query_cache', (int) $query_cache);
+            update_site_option('object_cache', (int) $object_cache);
+            update_site_option('asset_cache', (int) $asset_cache);
+            update_site_option('gzip_cache', (int) $gzip_cache);
+
+            #dump($static_cache, $memory_cache, $query_cache, $object_cache, $asset_cache, $gzip_cache);
+
+            self::enable_static();
+            self::enable_memcached();
+            self::enable_assets();
+            self::enable_gzip();
+
+            if ( !get_site_option('object_cache') && class_exists('object_cache') ) {
+                # do a hard object flush
+                wp_cache_flush();
+            }
+ 
+        }
+        
 	
 	/**
 	 * can_static()
@@ -738,7 +781,7 @@ EOS;
 		if ( !defined('WP_CACHE') || !WP_CACHE ) {
 			$contents = file_get_contents($file);
 			$line = "define('WP_CACHE', true);";
-			if ( defined('WP_CACHE') ) {
+			if (  stristr($contents, "'WP_CACHE'") ) {
 				$contents = preg_replace("/
 					(?!(?:\/\/|\#)\s*)
 					define\s*\(\s*
@@ -750,10 +793,10 @@ EOS;
 			} else {
 				$contents = preg_replace(
 					"/^<\?php\s*/",
-					"<?php" . PHP_EOL . $line . PHP_EOL,
+					"<?php" . PHP_EOL . PHP_EOL . $line . PHP_EOL . PHP_EOL,
 					$contents);
 			}
-			
+
 			if ( !$contents || !file_put_contents($file, $contents) ) {
 				echo '<div class="error">'
 					. '<p>'

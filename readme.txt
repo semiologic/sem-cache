@@ -3,7 +3,7 @@ Contributors: Denis-de-Bernardy
 Donate link: http://www.semiologic.com/partners/
 Tags: semiologic
 Requires at least: 2.8
-Tested up to: 3.2.1
+Tested up to: 3.4
 Stable tag: trunk
 
 A high performance cache for WordPress.
@@ -38,6 +38,15 @@ The [Semiologic forum](http://forum.semiologic.com) is the best place to report 
 
 
 == Change Log ==
+
+= 2.2 =
+
+- Fix static caching as WP_CACHE was not being written to wp-config.php
+- Add mod_expires and mod_mime sections.
+- Added more mod_deflate filters
+- Add cache control headers  
+- Added auto-enable logic and source code switch to enable
+- Updated mobile User Agents
 
 = 2.1.1 =
 

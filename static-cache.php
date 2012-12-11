@@ -90,6 +90,7 @@ class static_cache {
 
 	static function send_headers($headers) {
 		$bail = false;
+                
 		
 		$server_etag = false;
 		$client_etag = !empty($_SERVER['HTTP_IF_NONE_MATCH'])
@@ -133,6 +134,9 @@ class static_cache {
 			header($header, true);
 		
 		if ( $bail ) {
+                    	$protocol = $_SERVER["SERVER_PROTOCOL"];
+                        if ( 'HTTP/1.1' != $protocol && 'HTTP/1.0' != $protocol )
+                            $protocol = 'HTTP/1.0';
 			header("$protocol 304 Not Modified", true, 304);
 			die;
 		}
@@ -145,7 +149,7 @@ class static_cache {
 	 * @return void
 	 **/
 
-	static function start() {
+	static function start() {                          
 		# some things can be taken care of at all times
 		switch ( basename($_SERVER['REQUEST_URI']) ) {
 		case 'favicon.ico':
@@ -187,7 +191,7 @@ class static_cache {
 		
 		global $sem_mobile_agents;
 		$mobile_agents = $sem_mobile_agents;
-		$mobile_agents = array_map('preg_quote', (array) $mobile_agents);
+//		$mobile_agents = array_map('preg_quote', (array) $mobile_agents);
 		$mobile_agents = implode("|", $mobile_agents);
 		if ( preg_match("{($mobile_agents)}", $_SERVER['HTTP_USER_AGENT']) )
 			return;
@@ -230,7 +234,7 @@ class static_cache {
 				$headers = unserialize(cache_fs::get_contents($headers));
 				self::send_headers($headers);
 				
-				$buffer = $path . $cache_id . '.html';
+				$buffer = '/semi-static/' . $cache_id . '.html';
 				if ( cache_fs::exists($buffer) )
 					cache_fs::readfile($buffer);
 				die;
@@ -307,7 +311,7 @@ class static_cache {
 		if ( $sem_mobile_agents != sem_cache::get_mobile_agents() )
 			return $buffer;
 		$mobile_agents = $sem_mobile_agents;
-		$mobile_agents = array_map('preg_quote', (array) $mobile_agents);
+//		$mobile_agents = array_map('preg_quote', (array) $mobile_agents);
 		$mobile_agents = implode("|", $mobile_agents);
 		if ( preg_match("{($mobile_agents)}", $_SERVER['HTTP_USER_AGENT']) )
 			return $buffer;
