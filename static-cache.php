@@ -193,7 +193,7 @@ class static_cache {
 		$mobile_agents = $sem_mobile_agents;
 //		$mobile_agents = array_map('preg_quote', (array) $mobile_agents);
 		$mobile_agents = implode("|", $mobile_agents);
-		if ( preg_match("{($mobile_agents)}", $_SERVER['HTTP_USER_AGENT']) )
+		if ( preg_match("/($mobile_agents)/i", $_SERVER['HTTP_USER_AGENT']) )
 			return;
 		if ( preg_match("/(?=.*?\bandroid\b)(?=.*?\bmobile\b).*$/i", $_SERVER['HTTP_USER_AGENT']) )
 			return;                	
@@ -314,7 +314,7 @@ class static_cache {
 		$mobile_agents = $sem_mobile_agents;
 //		$mobile_agents = array_map('preg_quote', (array) $mobile_agents);
 		$mobile_agents = implode("|", $mobile_agents);
-		if ( preg_match("{($mobile_agents)}", $_SERVER['HTTP_USER_AGENT']) )
+		if ( preg_match("/($mobile_agents)/i", $_SERVER['HTTP_USER_AGENT']) )
 			return $buffer;
 		if ( preg_match("/(?=.*?\bandroid\b)(?=.*?\bmobile\b).*$/i", $_SERVER['HTTP_USER_AGENT']) )
 			return $buffer;  

@@ -39,6 +39,10 @@ The [Semiologic forum](http://forum.semiologic.com) is the best place to report 
 
 == Change Log ==
 
+= 2.3.1 =
+
+- Fix: Detection of mobile user agents that used mixed case failed
+
 = 2.3 =
 
 - Updated mobile agent detection Opera and Android Tablets
