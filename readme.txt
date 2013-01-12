@@ -2,9 +2,9 @@
 Contributors: Denis-de-Bernardy && Mike Koepke
 Donate link: http://www.semiologic.com/partners/
 Tags: semiologic
-Requires at least: 3.0
+Requires at least: 3.1
 Tested up to: 3.5
-Stable tag: trunk
+Stable tag: 2.3.2
 
 A high performance cache for WordPress.
 
@@ -41,7 +41,9 @@ The [Semiologic forum](http://forum.semiologic.com) is the best place to report 
 
 = 2.3.2 =
 
-- Fix: Detection of mobile user agents that used mixed case failed
+- Fix: wpdb::escape_by_ref() expected to be a reference message in query-cache.php
+- Silence warning message attempting to delete non-existant file
+- Fix misc. coding errors spotted by phpstorm
 
 = 2.3.1 =
 

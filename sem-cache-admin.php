@@ -116,12 +116,13 @@ class sem_cache_admin {
 					. '</strong>'
 				. '</p>' . "\n"
 				. '</div>' . "\n";
-			break;
 			
 			if ( !get_site_option('object_cache') && class_exists('object_cache') ) {
 				# do a hard object flush
 				wp_cache_flush();
 			}
+
+            break;
 		}
 		
 		if ( file_exists(WP_CONTENT_DIR . '/cache/wp_cache_mutex.lock') )
@@ -176,7 +177,7 @@ class sem_cache_admin {
 			$assets_errors[] = $error;
 		}
 		
-		if ( !( !get_option('permalink_structure') || is_writable(ABSPATH . '.htaccess') ) && !( function_exists() && is_multisite() ) ) {
+		if ( !( !get_option('permalink_structure') || is_writable(ABSPATH . '.htaccess') ) && !( function_exists('is_multisite') && is_multisite() ) ) {
 			$error = __('WP cannot overwrite your site\'s .htaccess file to insert new rewrite rules. The file needs to be writable by your server.', 'sem-cache');
 			$static_errors[] = $error;
 		}
