@@ -90,9 +90,12 @@ class query_cache {
 	 **/
 	
 	function __call($method, $args) {
-		return call_user_func_array(array(self::$wpdb, $method), $args);
+        if (strcmp($name, "escape_by_ref") == 0)
+            return call_user_func_array(array(self::$wpdb, $method), &$args);
+        else
+		    return call_user_func_array(array(self::$wpdb, $method), $args);
 	} # __call()
-	
+
 	
 	/**
 	 * get_var()
