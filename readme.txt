@@ -4,7 +4,7 @@ Donate link: http://www.semiologic.com/partners/
 Tags: semiologic
 Requires at least: 3.1
 Tested up to: 3.5
-Stable tag: 2.3.2
+Stable tag: 2.3.3
 
 A high performance cache for WordPress.
 
@@ -38,6 +38,10 @@ The [Semiologic forum](http://forum.semiologic.com) is the best place to report 
 
 
 == Change Log ==
+
+= 2.3.3 =
+
+- Fix: 3rd time the charm?  wpdb::escape_by_ref() expected to be a reference message in query-cache.php
 
 = 2.3.2 =
 
