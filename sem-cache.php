@@ -3,7 +3,7 @@
 Plugin Name: Semiologic Cache
 Plugin URI: http://www.semiologic.com/software/sem-cache/
 Description: An advanced caching module for WordPress.
-Version: 2.3.3
+Version: 2.3.4
 Author: Denis de Bernardy & Mike Koepke
 Author URI: http://www.getsemiologic.com
 Text Domain: sem-cache
@@ -749,7 +749,7 @@ EOS;
 			# flush author
 			$author_ids = array();
 			$author_ids[] = $post->post_author;
-			if ( $old )
+			if ( $old && isset($old['post_author']))
 				$author_ids[] = $old['post_author'];
 			foreach ( array_unique($author_ids) as $author_id )
 				self::do_flush_author($author_id);
@@ -757,7 +757,7 @@ EOS;
 			# flush archives
 			$dates = array();
 			$dates[] = strtotime($post->post_date);
-			if ( $old )
+			if ( $old && isset($old['post_date']))
 				$dates[] = strtotime($old['post_date']);
 			foreach ( array_unique($dates) as $date )
 				self::do_flush_date($date);
