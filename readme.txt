@@ -3,7 +3,7 @@ Contributors: Denis-de-Bernardy && Mike Koepke
 Donate link: http://www.semiologic.com/partners/
 Tags: semiologic
 Requires at least: 3.1
-Tested up to: 3.5
+Tested up to: 3.5.1
 Stable tag: 2.3.3
 
 A high performance cache for WordPress.
@@ -38,6 +38,10 @@ The [Semiologic forum](http://forum.semiologic.com) is the best place to report 
 
 
 == Change Log ==
+
+= 2.3.5 =
+
+- Turn off auto enabling of cache
 
 = 2.3.4 =
 

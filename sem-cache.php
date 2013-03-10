@@ -3,7 +3,7 @@
 Plugin Name: Semiologic Cache
 Plugin URI: http://www.semiologic.com/software/sem-cache/
 Description: An advanced caching module for WordPress.
-Version: 2.3.4
+Version: 2.3.5
 Author: Denis de Bernardy & Mike Koepke
 Author URI: http://www.getsemiologic.com
 Text Domain: sem-cache
@@ -51,7 +51,7 @@ if ( !defined('cache_timeout') )
 
 
 if ( !defined('auto_enable') )
-	define('auto_enable', true);
+	define('auto_enable', false);
 
 
 class sem_cache {
