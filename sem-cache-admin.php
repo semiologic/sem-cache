@@ -6,7 +6,14 @@
  **/
 
 class sem_cache_admin {
-	/**
+    /**
+     * sem_cache_admin()
+     */
+    function sem_cache_admin() {
+        add_action('settings_page_sem-cache', array($this, 'save_options'), 0);
+    }
+
+    /**
 	 * save_options()
 	 *
 	 * @return void
@@ -1023,5 +1030,6 @@ EOS;
 	} # disable_memcached()
 } # sem_cache_admin
 
-add_action('settings_page_sem-cache', array('sem_cache_admin', 'save_options'), 0);
+
+$sem_cache_admin = new sem_cache_admin();
 ?>

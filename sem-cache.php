@@ -3,7 +3,7 @@
 Plugin Name: Semiologic Cache
 Plugin URI: http://www.semiologic.com/software/sem-cache/
 Description: An advanced caching module for WordPress.
-Version: 2.3.5
+Version: 2.4
 Author: Denis de Bernardy & Mike Koepke
 Author URI: http://www.getsemiologic.com
 Text Domain: sem-cache
@@ -55,7 +55,105 @@ if ( !defined('auto_enable') )
 
 
 class sem_cache {
-	/**
+    /**
+     * sem_cache
+     */
+    function sem_cache() {
+        if (auto_enable)
+            register_activation_hook(__FILE__, array($this, 'enable'));
+        else
+            register_activation_hook(__FILE__, array($this, 'disable'));
+        register_deactivation_hook(__FILE__, array($this, 'disable'));
+
+        if ( !class_exists('cache_fs') )
+        	include dirname(__FILE__) . '/cache-fs.php';
+
+        if ( !is_admin() ) {
+        	if ( get_site_option('query_cache') )
+        		include dirname(__FILE__) . '/query-cache.php';
+
+        	if ( get_site_option('asset_cache') )
+        		include dirname(__FILE__) . '/asset-cache.php';
+        }
+
+        if ( class_exists('static_cache') ) {
+        	add_action('cache_timeout', array($this, 'cache_timeout'));
+        	if ( !wp_next_scheduled('cache_timeout') )
+        		wp_schedule_event(time(), 'hourly', 'cache_timeout');
+        	if ( sem_cache_debug && ( wp_next_scheduled('cache_timeout') - time() > cache_timeout ) )
+        		wp_schedule_single_event(time() + cache_timeout, 'cache_timeout');
+
+        	add_filter('status_header', array('static_cache', 'status_header'), 100, 2);
+        	add_filter('nocache_headers', array('static_cache', 'disable'));
+        	add_filter('wp_redirect_status', array('static_cache', 'wp_redirect_status'), 50);
+        }
+
+        add_action('wp_footer', array($this, 'stats'), 1000000);
+        add_action('admin_footer', array($this, 'stats'), 1000000);
+
+        add_filter('mod_rewrite_rules', array($this, 'rewrite_rules'), 1000000);
+
+        add_action('admin_menu', array($this, 'admin_menu'));
+        add_action('sem_admin_menu_settings', array($this, 'front_menu'));
+
+        function sem_cache_admin() {
+         	include_once dirname(__FILE__) . '/sem-cache-admin.php';
+        } # sem_cache_admin()
+
+        foreach ( array('load-settings_page_sem-cache') as $hook )
+        	add_action($hook, 'sem_cache_admin');
+
+        if ( static_cache || memory_cache || get_site_option('query_cache') ) :
+
+            add_action('pre_post_update', array($this, 'pre_flush_post'));
+
+            foreach ( array(
+                'save_post',
+                'delete_post',
+                ) as $hook ) {
+                add_action($hook, array($this, 'flush_post'), 1); // before _save_post_hook()
+            }
+
+            add_action('wp_update_comment_count', array($this, 'flush_post'), 1, 3); // before _save_post_hook()
+
+            foreach ( array(
+                'switch_theme',
+                'update_option_active_plugins',
+                'update_option_show_on_front',
+                'update_option_page_on_front',
+                'update_option_page_for_posts',
+                'update_option_sidebars_widgets',
+                'update_option_sem5_options',
+                'update_option_sem6_options',
+                'generate_rewrite_rules',
+                    'edit_user_profile_update',
+
+                'flush_cache',
+                'after_db_upgrade',
+
+                'update_option_sem_seo',
+                'update_option_script_manager',
+                ) as $hook ) {
+                add_action($hook, array($this, 'flush_cache'));
+            }
+
+            foreach ( array(
+                'switch_theme',
+                    'activated_plugin',
+                'deactivated_plugin',
+                'update_option_script_manager',
+                    'save_entry_script_manager',
+                ) as $hook ) {
+                add_action($hook, array($this, 'flush_assets'));
+            }
+
+            if ( $_POST )
+                add_action('load-widgets.php', array($this, 'flush_cache'));
+
+        endif;
+    }
+
+    /**
 	 * admin_menu()
 	 *
 	 * @return void
@@ -143,47 +241,88 @@ class sem_cache {
 	 **/
 
 	static function rewrite_rules($rules) {
+
 		if ( (bool) get_site_option('static_cache') ) {
-			$cache_dir = WP_CONTENT_DIR . '/cache/static';
-			$cache_url = parse_url(WP_CONTENT_URL . '/cache/static');
-			$cache_url = $cache_url['path'];
-			
-			if ( defined('SUBDOMAIN_INSTALL') && SUBDOMAIN_INSTALL ) {
-				$cache_dir .= '/' . $_SERVER['HTTP_HOST'];
-				$cache_url .= '/' . $_SERVER['HTTP_HOST'];
-			}
-			
-			$cache_cookies = array();
-			foreach ( self::get_cookies() as $cookie )
-				$cache_cookies[] = "RewriteCond %{HTTP_COOKIE} !\b$cookie=";
-			$cache_cookies = implode("\n", $cache_cookies);
-			
-			$mobile_agents = self::get_mobile_agents();
-	//		$mobile_agents = array_map('preg_quote', $mobile_agents);
-			$mobile_agents = implode('|', $mobile_agents);
-			
-			global $wp_rewrite;
-			
-			if ( $wp_rewrite->use_trailing_slashes ) {
-				$extra = <<<EOS
+
+			$rules = self::base_rewrite_rules($rules);
+  
+        }  // static_cache option
+		
+		if ( (bool) get_site_option('gzip_cache') ) {
+			$extra = self::mod_deflate_rules();
+			$rules = $extra . $rules;
+		} // gzip rules
+
+		//vary header rules
+		$extra = self::vary_header_rules();
+		$rules = $extra . $rules;
+ 
+        if ( (bool) get_site_option('static_cache') ) {
+	        $extra = self::mod_expires_rules();
+                $rules = $extra . $rules;
+
+	        $extra = self::mod_mime_rules();
+                $rules = $extra . $rules;
+
+	        $extra = self::mod_header_rules();
+	     		$rules = $extra . $rules;
+
+		    $extra = self::www_nonwww_rules();
+		        $rules = $extra . $rules;
+
+        } // static cache
+                
+		return $rules;
+	} # rewrite_rules()
+
+	/**
+	 * vary_header_rules()
+	 *
+	 * @param $rules
+	 * @return string $rules
+	 */
+
+	function base_rewrite_rules($rules) {
+		$cache_dir = WP_CONTENT_DIR . '/cache/static';
+		$cache_url = parse_url(WP_CONTENT_URL . '/cache/static');
+		$cache_url = $cache_url['path'];
+
+		if ( defined('SUBDOMAIN_INSTALL') && SUBDOMAIN_INSTALL ) {
+			$cache_dir .= '/' . $_SERVER['HTTP_HOST'];
+			$cache_url .= '/' . $_SERVER['HTTP_HOST'];
+		}
+
+		$cache_cookies = array();
+		foreach ( self::get_cookies() as $cookie )
+			$cache_cookies[] = "RewriteCond %{HTTP_COOKIE} !\b$cookie=";
+		$cache_cookies = implode("\n", $cache_cookies);
+
+		$mobile_agents = self::get_mobile_agents();
+//		$mobile_agents = array_map('preg_quote', $mobile_agents);
+		$mobile_agents = implode('|', $mobile_agents);
+
+		global $wp_rewrite;
+
+		if ( $wp_rewrite->use_trailing_slashes ) {
+			$extra = <<<EOS
 
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond $cache_dir%{REQUEST_URI}index.html -f
 RewriteCond %{HTTP_USER_AGENT} "!($mobile_agents)" [NC]
-RewriteCond %{HTTP_USER_AGENT} "!(?=.*?\bandroid\b)(?=.*?\bmobile\b).*$" [NC]    
+RewriteCond %{HTTP_USER_AGENT} "!(?=.*?\bandroid\b)(?=.*?\bmobile\b).*$" [NC]
 $cache_cookies
 RewriteCond %{QUERY_STRING} ^$
 RewriteCond %{THE_REQUEST} ^GET
 RewriteRule ^ $cache_url%{REQUEST_URI}index.html [L]
 
 EOS;
-			} else {
-				$extra = <<<EOS
+		} else {
+			$extra = <<<EOS
 
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond $cache_dir%{REQUEST_URI} -f
 RewriteCond %{HTTP_USER_AGENT} "!($mobile_agents)" [NC]
-RewriteCond %{HTTP_USER_AGENT} "!(?=.*?\bandroid\b)(?=.*?\bmobile\b).*$" [NC]    
+RewriteCond %{HTTP_USER_AGENT} "!(?=.*?\bandroid\b)(?=.*?\bmobile\b).*$" [NC]
 $cache_cookies
 RewriteCond %{QUERY_STRING} ^$
 RewriteCond %{THE_REQUEST} ^GET
@@ -192,252 +331,518 @@ RewriteRule ^ $cache_url%{REQUEST_URI} [L]
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond $cache_dir%{REQUEST_URI}.html -f
 RewriteCond %{HTTP_USER_AGENT} "!($mobile_agents)" [NC]
-RewriteCond %{HTTP_USER_AGENT} "!(?=.*?\bandroid\b)(?=.*?\bmobile\b).*$" [NC]    
+RewriteCond %{HTTP_USER_AGENT} "!(?=.*?\bandroid\b)(?=.*?\bmobile\b).*$" [NC]
 $cache_cookies
 RewriteCond %{QUERY_STRING} ^$
 RewriteCond %{THE_REQUEST} ^GET
 RewriteRule ^ $cache_url%{REQUEST_URI}.html [L]
 
 EOS;
-			}
-			
-			# this will simply fail if mod_rewrite isn't available
-			if ( preg_match("/RewriteBase.+\n*/i", $rules, $rewrite_base) ) {
-				$rewrite_base = end($rewrite_base);
-				$new_rewrite_base = trim($rewrite_base) . "\n\n" . trim($extra) . "\n\n";
-				$rules = str_replace($rewrite_base, $new_rewrite_base, $rules);
-			}
-
-                
-                $extra = <<<EOS
-
-<IfModule mod_headers.c>
-    <FilesMatch "\.(css|js|htc|CSS|JS|HTC)$">
-        Header set Pragma "public"
-        Header append Cache-Control "public, must-revalidate, proxy-revalidate"
-        FileETag MTime Size
-    </FilesMatch>
-    <FilesMatch "\.(html|htm|rtf|rtx|svg|svgz|txt|xsd|xsl|xml|HTML|HTM|RTF|RTX|SVG|SVGZ|TXT|XSD|XSL|XML)$">
-        Header set Pragma "public"
-        Header append Cache-Control "public, must-revalidate, proxy-revalidate"
-        FileETag MTime Size
-    </FilesMatch>
-    <FilesMatch "\.(bmp|gif|ico|jpg|jpeg|jpe|png|BMP|GIF|ICO|JPG|JPEG|JPE|PNG)$">
-        Header set Pragma "public"
-        Header append Cache-Control "public, must-revalidate, proxy-revalidate"
-        FileETag MTime Size
-    </FilesMatch> 
-    <FilesMatch "\.(asf|asx|wax|wmv|wmx|avi|class|divx|doc|docx|eot|exe|gz|gzip|mdb|mid|midi|mov|qt|mp3|m4a|mp4|m4v|mpeg|mpg|mpe|mpp|otf|odb|odc|odf|odg|odp|ods|odt|ogg|pdf|pot|pps|ppt|pptx|ra|ram|svg|svgz|swf|tar|tif|tiff|ttf|ttc|wav|wma|wri|xla|xls|xlsx|xlt|xlw|zip|ASF|ASX|WAX|WMV|WMX|AVI|BMP|CLASS|DIVX|DOC|DOCX|EOT|EXE|GIF|GZ|GZIP|ICO|JPG|JPEG|JPE|MDB|MID|MIDI|MOV|QT|MP3|M4A|MP4|M4V|MPEG|MPG|MPE|MPP|OTF|ODB|ODC|ODF|ODG|ODP|ODS|ODT|OGG|PDF|PNG|POT|PPS|PPT|PPTX|RA|RAM|SVG|SVGZ|SWF|TAR|TIF|TIFF|TTF|TTC|WAV|WMA|WRI|XLA|XLS|XLSX|XLT|XLW|ZIP)$">
-        Header set Pragma "public"
-        Header append Cache-Control "public, must-revalidate, proxy-revalidate"
-        FileETag MTime Size
-    </FilesMatch>  
-</IfModule>
-
-
-EOS;
-		
-		$rules = $extra . $rules;  
-  
-                }  // static_cache option
-		
-		if ( (bool) get_site_option('gzip_cache') ) {
-			$extra = <<<EOS
-
-<IfModule mod_deflate.c>
-    # Insert filters
-    AddOutputFilterByType DEFLATE text/plain
-    AddOutputFilterByType DEFLATE text/html
-    AddOutputFilterByType DEFLATE text/xml
-    AddOutputFilterByType DEFLATE text/css
-    AddOutputFilterByType DEFLATE text/richtext
-    AddOutputFilterByType DEFLATE text/javascript
-    AddOutputFilterByType DEFLATE application/xml
-    AddOutputFilterByType DEFLATE application/xhtml+xml
-    AddOutputFilterByType DEFLATE application/atom_xml
-    AddOutputFilterByType DEFLATE application/rss+xml
-    AddOutputFilterByType DEFLATE application/javascript
-    AddOutputFilterByType DEFLATE application/x-javascript
-    AddOutputFilterByType DEFLATE application/json
-    AddOutputFilterByType DEFLATE application/x-json
-    AddOutputFilterByType DEFLATE application/x-httpd-php
-    AddOutputFilterByType DEFLATE application/x-httpd-fastphp
-    AddOutputFilterByType DEFLATE image/svg+xml
-    AddOutputFilterByType DEFLATE image/x-icon
-
-    # Don't compress binaries
-    SetEnvIfNoCase Request_URI .(?:exe|t?gz|zip|iso|tar|bz2|sit|rar) no-gzip dont-vary
-
-    # Don't compress images
-    SetEnvIfNoCase Request_URI .(?:gif|jpe?g|jpg|ico|png)  no-gzip dont-vary
-
-    # Don't compress PDFs
-    SetEnvIfNoCase Request_URI .pdf no-gzip dont-vary
-
-    # Don't compress flash files (only relevant if you host your own videos)
-    SetEnvIfNoCase Request_URI .(?:flv|swf) no-gzip dont-vary
-
-    # Drop problematic browsers
-    BrowserMatch ^Mozilla/4 gzip-only-text/html
-    BrowserMatch ^Mozilla/4\.0[678] no-gzip
-    BrowserMatch \bMSIE !no-gzip !gzip-only-text/html
-    BrowserMatch \bMSI[E] !no-gzip !gzip-only-text/html
-    # Opera occasionally pretends to be IE with "Mozilla/4.0"
-    BrowserMatch \bOpera !no-gzip
-</IfModule>
-
-
-EOS;
-			
-			$rules = $extra . $rules;
 		}
-		
+
+		# this will simply fail if mod_rewrite isn't available
+		if ( preg_match("/RewriteBase.+\n*/i", $rules, $rewrite_base) ) {
+			$rewrite_base = end($rewrite_base);
+			$new_rewrite_base = trim($rewrite_base) . "\n\n" . trim($extra) . "\n\n";
+			$rules = str_replace($rewrite_base, $new_rewrite_base, $rules);
+		}
+
+		return $rules;
+	}
+
+	/**
+	 * vary_header_rules()
+	 *
+	 * @return string $rules
+	 **/
+
+	function vary_header_rules() {
 		$encoding = get_site_option('blog_charset');
 		if ( !$encoding )
 			$encoding = 'utf-8';
-		
+
 		$env_dont_vary = 'env=!dont-vary';
 /*		preg_match("{Apache/(\d+(?:\.\d+)*)}", $_SERVER['SERVER_SOFTWARE'], $apache_version);
 		$apache_version = end($apache_version);
 		if ( version_compare($apache_version, '2.0', '<') )
 			$env_dont_vary = '';
-*/		
+*/
 		$extra = <<<EOS
 
+# ------------------------------------------------------------------------------
+# | UTF-8 encoding                                                             |
+# ------------------------------------------------------------------------------
+
+# Use UTF-8 encoding for anything served as `text/html` or `text/plain`.
 AddDefaultCharset $encoding
+
+# Force UTF-8 for certain file formats.
+<IfModule mod_mime.c>
+    AddCharset utf-8 .atom .css .js .json .rss .vtt .webapp .xml
+</IfModule>
 
 <IfModule mod_headers.c>
     # Make sure proxies don't deliver the wrong content
-    Header append Vary User-Agent $env_dont_vary 
+    Header append Vary User-Agent $env_dont_vary
     Header append Vary Cookie $env_dont_vary
 </IfModule>
 
-
-EOS;
-		
-		$rules = $extra . $rules;
- 
-        if ( (bool) get_site_option('static_cache') ) {      
-                $extra = <<<EOS
-
-<IfModule mod_mime.c>
-    AddType application/x-javascript .js
-    AddType application/java .class
-    AddType application/msword .doc .docx
-    AddType application/x-msdownload .exe
-    AddType application/x-gzip .gz .gzip
-    AddType application/x-font-otf .otf
-    AddType application/pdf .pdf
-    AddType application/x-shockwave-flash .swf
-    AddType application/x-tar .tar
-    AddType application/x-font-ttf .ttf .ttc
-    AddType application/vnd.ms-access .mdb
-    AddType application/vnd.ms-powerpoint .pot .pps .ppt .pptx
-    AddType application/vnd.ms-fontobject .eot
-    AddType application/vnd.ms-write .wri
-    AddType application/vnd.ms-excel .xla .xls .xlsx .xlt .xlw
-    AddType application/vnd.ms-project .mpp
-    AddType application/zip .zip    
-    AddType audio/wav .wav
-    AddType audio/wma .wma
-    AddType audio/x-realaudio .ra .ram
-    AddType audio/midi .mid .midi
-    AddType audio/ogg .ogg
-    AddType audio/mpeg .mp3 .m4a
-    AddType image/bmp .bmp
-    AddType image/svg+xml .svg .svgz
-    AddType image/gif .gif
-    AddType image/x-icon .ico
-    AddType image/jpeg .jpg .jpeg .jpe
-    AddType image/tiff .tif .tiff
-    AddType image/png .png
-    AddType text/plain .txt
-    AddType text/xsd .xsd
-    AddType text/xsl .xsl
-    AddType text/xml .xml
-    AddType text/css .css
-    AddType text/x-component .htc
-    AddType text/html .html .htm
-    AddType text/richtext .rtf .rtx
-    AddType video/asf .asf .asx .wax .wmv .wmx
-    AddType video/avi .avi
-    AddType video/divx .divx
-    AddType video/x-flv .flv
-    AddType video/quicktime .mov .qt
-    AddType video/mp4 .mp4 .m4v
-    AddType video/mpeg .mpeg .mpg .mpe
+# ----------------------------------------------------------------------
+# Instructs the proxies to cache two versions of the resource: one compressed, and one uncompressed.
+# https://developers.google.com/speed/docs/best-practices/caching#LeverageProxyCaching
+# ----------------------------------------------------------------------
+<IfModule mod_headers.c>
+  <FilesMatch "\.(js|css|xml|gz)$">
+    Header append Vary: Accept-Encoding
+  </FilesMatch>
 </IfModule>
 
-<IfModule mod_expires.c>
-    ExpiresActive On
-    ExpiresDefault "access plus 2 hours"
-    ExpiresByType application/x-javascript "access plus 1 month"
-    ExpiresByType application/javascript "access plus 1 month"
-    ExpiresByType application/java "access plus 1 month"
-    ExpiresByType application/json "access plus 2 hours"
-    ExpiresByType application/msword "access plus 1 month"
-    ExpiresByType application/x-shockwave-flash "access plus 1 month"
-    ExpiresByType application/x-tar "access plus 1 month"
-    ExpiresByType application/pdf "access plus 1 month"
-    ExpiresByType application/rss+xml "access plus 2 hours"
-    ExpiresByType application/x-font-ttf "access plus 1 month"
-    ExpiresByType application/vnd.ms-access "access plus 1 month"
-    ExpiresByType application/vnd.ms-write "access plus 1 month"
-    ExpiresByType application/vnd.ms-excel "access plus 1 month"
-    ExpiresByType application/vnd.ms-powerpoint "access plus 1 month"
-    ExpiresByType application/vnd.ms-project "access plus 1 month"
-    ExpiresByType application/zip "access plus 1 month"
-    ExpiresByType application/vnd.ms-fontobject "access plus 1 month"
-    ExpiresByType application/x-msdownload "access plus 1 month"
-    ExpiresByType application/x-gzip "access plus 1 month"
-    ExpiresByType application/x-font-otf "access plus 1 month"
-    ExpiresByType audio/x-realaudio "access plus 1 month"
-    ExpiresByType audio/wav "access plus 1 month"
-    ExpiresByType audio/wma "access plus 1 month"
-    ExpiresByType audio/ogg "access plus 1 month"
-    ExpiresByType audio/midi "access plus 1 month"
-    ExpiresByType audio/mpeg "access plus 1 month"
-    ExpiresByType font/ttf "access plus 1 month"
-    ExpiresByType font/woff "access plus 1 month"
-    ExpiresByType image/svg+xml "access plus 1 month"
-    ExpiresByType image/tiff "access plus 1 month"
-    ExpiresByType image/bmp "access plus 1 month"
-    ExpiresByType image/gif "access plus 1 month"
-    ExpiresByType image/x-icon "access plus 1 month"
-    ExpiresByType image/jpeg "access plus 1 month"    
-    ExpiresByType image/png "access plus 1 month"
-    ExpiresByType text/css "access plus 1 month"
-    ExpiresByType text/x-component "access plus 1 month"
-    ExpiresByType text/html "access plus 2 hours"
-    ExpiresByType text/richtext "access plus 1 month"
-    ExpiresByType text/plain "access plus 1 month"
-    ExpiresByType text/xsd "access plus 1 month"
-    ExpiresByType text/xsl "access plus 1 month"
-    ExpiresByType text/xml "access plus 2 hours"
-    ExpiresByType text/javascript "access plus 1 month"
-    ExpiresByType video/asf "access plus 1 month"
-    ExpiresByType video/avi "access plus 1 month"
-    ExpiresByType video/divx "access plus 1 month"
-    ExpiresByType video/quicktime "access plus 1 month"
-    ExpiresByType video/mp4 "access plus 1 month"
-    ExpiresByType video/mpeg "access plus 1 month"
-</IfModule>           
+EOS;
+
+		return $extra;
+	}
+
+
+	/**
+	 * www_nonwww_rules()
+	 *
+	 * @return string $rules
+	 **/
+
+	function www_nonwww_rules() {
+
+		$site_url = get_option('siteurl');
+
+		// check for local server
+		if ( strpos($site_url, 'localhost') !== false || strpos($site_url, '127.0.0.1') !== false)
+			return '';
+
+		$site_www = strpos($site_url, 'http://www.') !== false;
+
+		$domain = self::url_to_domain($site_url);
+
+		if ($site_www) {
+
+		$extra = <<<EOS
+# ----------------------------------------------------------------------
+# Set non-www to www redirect
+# ----------------------------------------------------------------------
+
+<IfModule mod_rewrite.c>
+	RewriteCond %{HTTP_HOST} !^www\.$domain$ [NC]
+	RewriteRule ^(.*)$ http://www.$domain/$1 [R=301,L]
+</IfModule>
 
 EOS;
-		
-		$rules = $extra . $rules;                  
-        }                               
-                
-		return $rules;
-	} # rewrite_rules()
-	
-	
+		}
+		else {
+	$extra = <<<EOS
+# ----------------------------------------------------------------------
+# Set www to non-www redirect
+# ----------------------------------------------------------------------
+
+ <IfModule mod_rewrite.c>
+    RewriteCond %{HTTP_HOST} ^www\.$domain [NC]
+    RewriteRule ^(.*)$ http://$domain/$1 [L,R=301]
+</IfModule>
+
+EOS;
+
+		}
+		return $extra;
+	} // www_nonwww_rules()
+
+	/**
+	 * mod_header_rules()
+	 *
+	 * @return string $rules
+	 **/
+
+	function mod_header_rules() {
+
+	$extra = <<<EOS
+
+# ----------------------------------------------------------------------
+# CORS-enabled images (@crossorigin)
+# Send CORS headers if browsers request them; enabled by default for images.
+# http://developer.mozilla.org/en/CORS_Enabled_Image
+# http://blog.chromium.org/2011/07/using-cross-domain-images-in-webgl-and.html
+# http://hacks.mozilla.org/2011/11/using-cors-to-load-webgl-textures-from-cross-domain-images/
+# http://wiki.mozilla.org/Security/Reviews/crossoriginAttribute
+# ----------------------------------------------------------------------
+
+<IfModule mod_setenvif.c>
+	<IfModule mod_headers.c>
+		<FilesMatch "\.(gif|png|jpe?g|svg|svgz|ico|webp)$">
+			SetEnvIf Origin ":" IS_CORS
+			Header set Access-Control-Allow-Origin "*" env=IS_CORS
+		</FilesMatch>
+	</IfModule>
+</IfModule>
+
+# ----------------------------------------------------------------------
+# Webfont access
+# Allow access from all domains for webfonts.
+# ----------------------------------------------------------------------
+
+<IfModule mod_headers.c>
+	<FilesMatch "\.(ttf|ttc|otf|eot|woff|font.css)$">
+		Header set Access-Control-Allow-Origin "*"
+	</FilesMatch>
+</IfModule>
+
+# ------------------------------------------------------------------------------
+# | Better website experience                                                  |
+# ------------------------------------------------------------------------------
+
+# Force IE to render pages in the highest available mode in the various
+# cases when it may not: http://hsivonen.iki.fi/doctype/ie-mode.pdf.
+
+<IfModule mod_headers.c>
+    Header set X-UA-Compatible "IE=edge"
+    # `mod_headers` can't match based on the content-type, however, we only
+    # want to send this header for HTML pages and not for the other resources
+		<FilesMatch "\.(js|css|gif|png|jpe?g|pdf|xml|oga|ogg|m4a|ogv|mp4|m4v|webm|svg|svgz|eot|ttf|otf|woff|ico|webp|appcache|manifest|htc|crx|oex|xpi|safariextz|vcf)$" >
+        Header unset X-UA-Compatible
+    </FilesMatch>
+</IfModule>
+
+
+<IfModule mod_headers.c>
+	# No caching for dynamic files
+	<filesMatch "\.(php|cgi|pl|htm)$">
+		ExpiresDefault A0
+		Header set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
+		Header set Pragma "no-cache"
+	</filesMatch>
+
+	# 1 MIN
+	<filesMatch "\.(html)$">
+		ExpiresDefault A60
+		Header set Cache-Control "max-age=60, must-revalidate"
+	</filesMatch>
+
+	# 2 DAYS
+	<filesMatch "\.(xml|txt)$">
+		ExpiresDefault A172800
+		Header set Cache-Control "max-age=172800, must-revalidate"
+	</filesMatch>
+
+	# 1 WEEK
+	<filesMatch "\.(jpg|jpeg|png|gif|swf|js|css)$">
+		ExpiresDefault A604800
+		Header set Cache-Control "max-age=604800, must-revalidate"
+	</filesMatch>
+
+	# 1 MONTH
+	<filesMatch "\.(ico|pdf|flv)$">
+		ExpiresDefault A2419200
+		Header set Cache-Control "max-age=2419200, must-revalidate"
+</filesMatch>
+
+</IfModule>
+
+	# Prevent some of the mobile network providers from modifying the content of
+	# your site: http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9.5.
+
+	# <IfModule mod_headers.c>
+	#    Header set Cache-Control "no-transform"
+	# </IfModule># Prevent some of the mobile network providers from modifying the content of
+	# your site: http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9.5.
+
+<IfModule mod_headers.c>
+    Header set Cache-Control "no-transform"
+</IfModule>
+
+
+EOS;
+
+		return $extra;
+	}
+
+	/**
+	 * mod_deflate_rules()
+	 *
+	 * @return string $rules
+	 **/
+
+	function mod_deflate_rules() {
+		$extra = <<<EOS
+
+<IfModule mod_deflate.c>
+
+    # Force compression for mangled headers.
+    # http://developer.yahoo.com/blogs/ydn/posts/2010/12/pushing-beyond-gzipping
+    <IfModule mod_setenvif.c>
+        <IfModule mod_headers.c>
+            SetEnvIfNoCase ^(Accept-EncodXng|X-cept-Encoding|X{15}|~{15}|-{15})$ ^((gzip|deflate)\s*,?\s*)+|[X~-]{4,13}$ HAVE_Accept-Encoding
+            RequestHeader append Accept-Encoding "gzip,deflate" env=HAVE_Accept-Encoding
+        </IfModule>
+    </IfModule>
+
+    # Compress all output labeled with one of the following MIME-types
+    # (for Apache versions below 2.3.7, you don't need to enable `mod_filter`
+    #  and can remove the `<IfModule mod_filter.c>` and `</IfModule>` lines
+    #  as `AddOutputFilterByType` is still in the core directives).
+    <IfModule mod_filter.c>
+        AddOutputFilterByType DEFLATE application/atom+xml \
+                                      application/javascript \
+                                      application/json \
+                                      application/rss+xml \
+                                      application/vnd.ms-fontobject \
+                                      application/x-font-ttf \
+                                      application/x-web-app-manifest+json \
+                                      application/xhtml+xml \
+                                      application/xml \
+                                      font/opentype \
+                                      image/svg+xml \
+                                      image/x-icon \
+                                      text/css \
+                                      text/html \
+                                      text/plain \
+                                      text/richtext \
+                                      text/x-component \
+                                      text/xml
+
+		# Don't compress binaries
+		SetEnvIfNoCase Request_URI .(?:exe|t?gz|zip|iso|tar|bz2|sit|rar) no-gzip dont-vary
+
+		# Don't compress images
+		SetEnvIfNoCase Request_URI .(?:gif|jpe?g|jpg|ico|png)  no-gzip dont-vary
+
+		# Don't compress PDFs
+		SetEnvIfNoCase Request_URI .pdf no-gzip dont-vary
+
+		# Don't compress flash files (only relevant if you host your own videos)
+		SetEnvIfNoCase Request_URI .(?:flv|swf) no-gzip dont-vary
+
+		# Drop problematic browsers
+		BrowserMatch ^Mozilla/4 gzip-only-text/html
+		BrowserMatch ^Mozilla/4\.0[678] no-gzip
+		BrowserMatch \bMSIE !no-gzip !gzip-only-text/html
+		BrowserMatch \bMSI[E] !no-gzip !gzip-only-text/html
+		# Opera occasionally pretends to be IE with "Mozilla/4.0"
+		BrowserMatch \bOpera !no-gzip
+	</IfModule>
+
+EOS;
+
+		return $extra;
+	}
+
+	/**
+	 * mod_mime_rules()
+	 *
+	 * @return string $rules
+	 **/
+
+	static function mod_mime_rules() {
+		$extra = <<<EOS
+
+<IfModule mod_mime.c>
+
+  # Audio
+    AddType audio/mp4                                   m4a f4a f4b
+    AddType audio/ogg                                   oga ogg
+	AddType audio/wav                                   wav
+	AddType audio/wma                                   wma
+	AddType audio/x-realaudio                           ra ram
+	AddType audio/midi                                  mid midi
+	AddType audio/mpeg                                  mp3 m4a
+
+  # Images
+  	AddType image/bmp                                   bmp
+	AddType image/gif                                   gif
+	AddType image/jpeg                                  jpg jpeg jpe
+	AddType image/tiff                                  tif tiff
+	AddType image/png                                   png
+
+  # JavaScript
+    # Normalize to standard type (it's sniffed in IE anyways):
+    # http://tools.ietf.org/html/rfc4329#section-7.2
+    AddType application/javascript                      js
+    AddType application/json                            json
+
+  # Video
+    AddType video/mp4                                   mp4 m4v f4v f4p
+    AddType video/ogg                                   ogv
+    AddType video/webm                                  webm
+    AddType video/x-flv                                 flv
+	AddType video/asf                                   asf asx wax wmv wmx
+	AddType video/avi                                   avi
+	AddType video/divx                                  divx
+	AddType video/quicktime                             mov qt
+	AddType video/mpeg                                  mpeg mpg mpe
+
+  # Web fonts
+    AddType application/font-woff                       woff
+    AddType application/vnd.ms-fontobject               eot
+
+    # Browsers usually ignore the font MIME types and sniff the content,
+    # however, Chrome shows a warning if other MIME types are used for the
+    # following fonts.
+    AddType application/x-font-ttf                      ttc ttf
+    AddType font/opentype                               otf
+
+    # Make SVGZ fonts work on iPad:
+    # https://twitter.com/FontSquirrel/status/14855840545
+    AddType     image/svg+xml                           svg svgz
+    AddEncoding gzip                                    svgz
+
+  # Other
+    AddType application/octet-stream                    safariextz
+    AddType application/x-chrome-extension              crx
+    AddType application/x-opera-extension               oex
+    AddType application/x-shockwave-flash               swf
+    AddType application/x-web-app-manifest+json         webapp
+    AddType application/x-xpinstall                     xpi
+    AddType application/xml                             atom rdf rss xml
+    AddType image/webp                                  webp
+    AddType image/x-icon                                ico
+    AddType text/cache-manifest                         appcache manifest
+    AddType text/vtt                                    vtt
+    AddType text/x-component                            htc
+    AddType text/x-vcard                                vcf
+	AddType text/plain                                  txt
+	AddType text/richtext                               rtf rtx
+
+  # Compressed Files
+	AddType application/x-tar                           tar
+	AddType application/x-gzip                          gz gzip
+	AddType application/zip                             zip
+
+  # Applications
+	AddType application/msword                          doc docx
+	AddType application/x-msdownload                    exe
+	AddType application/pdf                             pdf
+	AddType application/vnd.ms-access                   mdb
+	AddType application/vnd.ms-powerpoint               pot pps ppt pptx
+	AddType application/vnd.ms-excel                    xla xls xlsx xlt xlw
+	AddType application/vnd.ms-project                  mpp
+
+</IfModule>
+
+EOS;
+
+		return $extra;
+	}
+
+
+	/**
+	 * mod_expires_rules()
+	 *
+	 * @return string $rules
+	 **/
+
+	static function mod_expires_rules() {
+		$extra = <<<EOS
+
+# Since we're sending far-future expires headers (see below), ETags can
+# be removed: http://developer.yahoo.com/performance/rules.html#etags.
+
+# `FileETag None` is not enough for every server.
+<IfModule mod_headers.c>
+    Header unset ETag
+</IfModule>
+
+FileETag None
+
+<IfModule mod_expires.c>
+
+    ExpiresActive on
+    ExpiresDefault                                      "access plus 1 month"
+
+  # CSS
+    ExpiresByType text/css                              "access plus 1 year"
+
+  # Data interchange
+    ExpiresByType application/json                      "access plus 0 seconds"
+    ExpiresByType application/xml                       "access plus 0 seconds"
+    ExpiresByType text/xml                              "access plus 0 seconds"
+    ExpiresByType text/xsd                              "access plus 1 month"
+    ExpiresByType text/xsl                              "access plus 1 month"
+
+  # Favicon (cannot be renamed!)
+    ExpiresByType image/x-icon                          "access plus 1 week"
+
+  # HTML components (HTCs)
+    ExpiresByType text/x-component                      "access plus 1 month"
+
+  # HTML
+    ExpiresByType text/html                             "access plus 0 seconds"
+
+  # JavaScript
+    ExpiresByType application/javascript                "access plus 1 year"
+
+  # Manifest files
+    ExpiresByType application/x-web-app-manifest+json   "access plus 0 seconds"
+    ExpiresByType text/cache-manifest                   "access plus 0 seconds"
+
+  # Media
+    ExpiresByType audio/ogg                             "access plus 1 month"
+    ExpiresByType audio/x-realaudio                     "access plus 1 month"
+    ExpiresByType audio/wav                             "access plus 1 month"
+    ExpiresByType audio/wma                             "access plus 1 month"
+    ExpiresByType audio/ogg                             "access plus 1 month"
+    ExpiresByType audio/midi                            "access plus 1 month"
+    ExpiresByType audio/mpeg                            "access plus 1 month"
+    ExpiresByType image/gif                             "access plus 1 month"
+    ExpiresByType image/jpeg                            "access plus 1 month"
+    ExpiresByType image/png                             "access plus 1 month"
+    ExpiresByType image/tiff                            "access plus 1 month"
+    ExpiresByType image/bmp                             "access plus 1 month"
+    ExpiresByType video/mp4                             "access plus 1 month"
+    ExpiresByType video/ogg                             "access plus 1 month"
+    ExpiresByType video/webm                            "access plus 1 month"
+    ExpiresByType video/asf                             "access plus 1 month"
+    ExpiresByType video/avi                             "access plus 1 month"
+    ExpiresByType video/divx                            "access plus 1 month"
+    ExpiresByType video/quicktime                       "access plus 1 month"
+    ExpiresByType video/mpeg                            "access plus 1 month"
+
+  # Web feeds
+    ExpiresByType application/atom+xml                  "access plus 1 hour"
+    ExpiresByType application/rss+xml                   "access plus 1 hour"
+
+  # Web fonts
+    ExpiresByType application/font-woff                 "access plus 1 month"
+    ExpiresByType application/vnd.ms-fontobject         "access plus 1 month"
+    ExpiresByType application/x-font-ttf                "access plus 1 month"
+    ExpiresByType font/opentype                         "access plus 1 month"
+    ExpiresByType image/svg+xml                         "access plus 1 month"
+
+  # Application files
+    ExpiresByType application/msword                    "access plus 1 month"
+    ExpiresByType application/pdf                       "access plus 1 month"
+    ExpiresByType application/vnd.ms-access             "access plus 1 month"
+    ExpiresByType application/vnd.ms-write              "access plus 1 month"
+    ExpiresByType application/vnd.ms-excel              "access plus 1 month"
+    ExpiresByType application/vnd.ms-powerpoint         "access plus 1 month"
+    ExpiresByType application/vnd.ms-project            "access plus 1 month"
+    ExpiresByType text/richtext                         "access plus 1 month"
+    ExpiresByType text/plain                            "access plus 1 month"
+    ExpiresByType application/x-msdownload              "access plus 1 month"
+    ExpiresByType application/x-shockwave-flash         "access plus 1 month"
+	ExpiresByType application/java                      "access plus 1 month"
+
+  # Compressed files
+    ExpiresByType application/x-tar                     "access plus 1 month"
+    ExpiresByType application/zip                       "access plus 1 month"
+    ExpiresByType application/x-gzip                    "access plus 1 month"
+
+</IfModule>
+
+EOS;
+
+		return $extra;
+	}
+
 	/**
 	 * cache_timeout()
 	 *
-	 * @param bool $force
+	 * @internal param bool $force
 	 * @return bool $success
-	 **/
+	 */
 
 	static function cache_timeout() {
 		if ( !static_cache )
@@ -478,6 +883,7 @@ EOS;
 			'iPod',
 			'aspen',
 			'dream',
+            'BB10',
 			'BlackBerry',
             'IEMobile',
             'Opera Mobi',
@@ -488,14 +894,14 @@ EOS;
 			);
 		return apply_filters('sem_cache_mobile_agents', $agents);
 	} # get_mobile_agents()
-        
-	
+
+
 	/**
 	 * flush_static()
 	 *
-	 * @param int $timeout
+	 * @param bool|int $timeout
 	 * @return void
-	 **/
+	 */
 
 	static function flush_static($timeout = false) {
 		if ( static_cache )
@@ -505,14 +911,14 @@ EOS;
 		elseif ( static_cache )
 			cache_fs::flush('/semi-static/', $timeout);
 	} # flush_static()
-	
-	
+
+
 	/**
 	 * flush_assets()
 	 *
-	 * @param int $timeout
+	 * @param bool|int $timeout
 	 * @return void
-	 **/
+	 */
 
 	static function flush_assets($timeout = false) {
 		cache_fs::flush('/assets/', $timeout);
@@ -528,14 +934,15 @@ EOS;
 	static function flush_objects() {
 		wp_cache_flush();
 	} # flush_objects()
-	
-	
+
+
 	/**
 	 * flush_url()
 	 *
-	 * @param string $url
+	 * @param $link
+	 * @internal param string $url
 	 * @return void
-	 **/
+	 */
 
 	static function flush_url($link) {
 		$cache_id = md5($link);
@@ -563,14 +970,15 @@ EOS;
 			cache_fs::flush('/semi-static/' . $cache_id . '.html', $timeout, false);
 		}
 	} # flush_url()
-	
-	
+
+
 	/**
 	 * flush_feed_url()
 	 *
-	 * @param string $url
+	 * @param $link
+	 * @internal param string $url
 	 * @return void
-	 **/
+	 */
 
 	static function flush_feed_url($link) {
 		$cache_id = md5($link);
@@ -641,15 +1049,16 @@ EOS;
 		if ( $update )
 			wp_cache_set($post_id, $old, 'pre_flush_post');
 	} # pre_flush_post()
-	
-	
+
+
 	/**
 	 * flush_post_url()
 	 *
-	 * @param string $url
-	 * @param int $timeout
+	 * @param $link
+	 * @internal param string $url
+	 * @internal param int $timeout
 	 * @return void
-	 **/
+	 */
 
 	static function flush_post_url($link) {
 		$cache_id = md5($link);
@@ -918,13 +1327,14 @@ EOS;
 			self::flush_feed_url($link);
 		}
 	} # do_flush_author()
-	
-	
+
+
 	/**
 	 * do_flush_date()
 	 *
+	 * @param $date
 	 * @return void
-	 **/
+	 */
 
 	static function do_flush_date($date) {
 		static $done;
@@ -1030,98 +1440,32 @@ EOS;
 		self::flush_static();
 		return $in;
 	} # flush_cache()
+
+	function url_to_domain($url)
+	{
+	    $host = @parse_url($url, PHP_URL_HOST);
+
+	    // If the URL can't be parsed, use the original URL
+	    // Change to "return false" if you don't want that
+	    if (!$host) {
+	        return false;
+	    }
+
+	    // The "www." prefix isn't really needed if you're just using
+	    // this to display the domain to the user
+	    if (substr($host, 0, 4) == "www.") {
+	        $host = substr($host, 4);
+	    }
+
+	    // You might also want to limit the length if screen space is limited
+	    if (strlen($host) > 50) {
+	        $host = substr($host, 0, 47) . '...';
+	    }
+
+	    return $host;
+	}
 } # sem_cache
 
-if (auto_enable)
-    register_activation_hook(__FILE__, array('sem_cache', 'enable'));
-else
-    register_activation_hook(__FILE__, array('sem_cache', 'disable'));
-register_deactivation_hook(__FILE__, array('sem_cache', 'disable'));
 
-if ( !class_exists('cache_fs') )
-	include dirname(__FILE__) . '/cache-fs.php';
-
-if ( !is_admin() ) {
-	if ( get_site_option('query_cache') )
-		include dirname(__FILE__) . '/query-cache.php';
-
-	if ( get_site_option('asset_cache') )
-		include dirname(__FILE__) . '/asset-cache.php';
-}
-
-if ( class_exists('static_cache') ) {
-	add_action('cache_timeout', array('sem_cache', 'cache_timeout'));
-	if ( !wp_next_scheduled('cache_timeout') )
-		wp_schedule_event(time(), 'hourly', 'cache_timeout');
-	if ( sem_cache_debug && ( wp_next_scheduled('cache_timeout') - time() > cache_timeout ) )
-		wp_schedule_single_event(time() + cache_timeout, 'cache_timeout');
-	
-	add_filter('status_header', array('static_cache', 'status_header'), 100, 2);
-	add_filter('nocache_headers', array('static_cache', 'disable'));
-	add_filter('wp_redirect_status', array('static_cache', 'wp_redirect_status'), 50);
-}
-
-add_action('wp_footer', array('sem_cache', 'stats'), 1000000);
-add_action('admin_footer', array('sem_cache', 'stats'), 1000000);
-
-add_filter('mod_rewrite_rules', array('sem_cache', 'rewrite_rules'), 1000000);
-
-add_action('admin_menu', array('sem_cache', 'admin_menu'));
-add_action('sem_admin_menu_settings', array('sem_cache', 'front_menu'));
-
-function sem_cache_admin() {
- 	include_once dirname(__FILE__) . '/sem-cache-admin.php';
-} # sem_cache_admin()
-
-foreach ( array('load-settings_page_sem-cache') as $hook )
-	add_action($hook, 'sem_cache_admin');
-
-if ( static_cache || memory_cache || get_site_option('query_cache') ) :
-
-add_action('pre_post_update', array('sem_cache', 'pre_flush_post'));
-
-foreach ( array(
-	'save_post',
-	'delete_post',
-	) as $hook ) {
-	add_action($hook, array('sem_cache', 'flush_post'), 1); // before _save_post_hook()
-}
-
-add_action('wp_update_comment_count', array('sem_cache', 'flush_post'), 1, 3); // before _save_post_hook()
-
-foreach ( array(
-	'switch_theme',
-	'update_option_active_plugins',
-	'update_option_show_on_front',
-	'update_option_page_on_front',
-	'update_option_page_for_posts',
-	'update_option_sidebars_widgets',
-	'update_option_sem5_options',
-	'update_option_sem6_options',
-	'generate_rewrite_rules',
-        'edit_user_profile_update',
-	
-	'flush_cache',
-	'after_db_upgrade',
-	
-	'update_option_sem_seo',
-	'update_option_script_manager',
-	) as $hook ) {
-	add_action($hook, array('sem_cache', 'flush_cache'));
-}
-
-foreach ( array(
-	'switch_theme',
-        'activated_plugin',
-	'deactivated_plugin',	
-	'update_option_script_manager',
-        'save_entry_script_manager',
-	) as $hook ) {
-	add_action($hook, array('sem_cache', 'flush_assets'));
-}
-
-if ( $_POST )
-	add_action('load-widgets.php', array('sem_cache', 'flush_cache'));
-
-endif;
+$sem_cache = new sem_cache();
 ?>

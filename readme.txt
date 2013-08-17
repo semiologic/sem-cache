@@ -2,9 +2,9 @@
 Contributors: Denis-de-Bernardy && Mike Koepke
 Donate link: http://www.semiologic.com/partners/
 Tags: semiologic
-Requires at least: 3.1
-Tested up to: 3.5.1
-Stable tag: 2.3.3
+Requires at least: 3.3
+Tested up to: 3.6
+Stable tag: trunk
 
 A high performance cache for WordPress.
 
@@ -12,6 +12,8 @@ A high performance cache for WordPress.
 == Description ==
 
 The Semiologic Cache plugin for WordPress is a high performance cache for sites built using WP.
+
+**Important: For those upgrading, turn the off caching (Settings->Cache) then back on to force new server rules to be written**
 
 Activate the Semiologic Cache plugin, and browse Settings / Cache to use the plugin.
 
@@ -38,6 +40,18 @@ The [Semiologic forum](http://forum.semiologic.com) is the best place to report 
 
 
 == Change Log ==
+
+= 2.4 =
+
+- Updated htaccess caching rules
+- www -> non-www or non-www -> www redirect rules added to htaccess is caching is turned on.
+- WP 3.6 compat
+- PHP 5.4 compat
+**Important: Turn the cache off (Settings->Cache) then back on to force new server rules to be written**
+
+= 2.3.6 =
+
+- Add Blackberry 10 User Agent detection
 
 = 2.3.5 =
 

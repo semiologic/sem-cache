@@ -256,7 +256,7 @@ class asset_cache {
 	 * @return string $str
 	 **/
 
-	function strip_bom($str) {
+	static function strip_bom($str) {
 		if ( preg_match('{^\x0\x0\xFE\xFF}', $str) ) {
 			# UTF-32 Big Endian BOM
 			$str = substr($str, 4);

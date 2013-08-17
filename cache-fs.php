@@ -35,15 +35,15 @@ class cache_fs {
 	static protected function path_join($file) {
 		return rtrim(self::$base_dir . '/' . ltrim($file, '/'), '/');
 	} # path_join()
-	
-	
+
+
 	/**
 	 * exists()
 	 *
 	 * @param string $file
-	 * @param int $timeout
+	 * @param bool|int $timeout
 	 * @return bool $valid
-	 **/
+	 */
 
 	static function exists($file, $timeout = false) {
 		$file = self::path_join($file);
@@ -79,13 +79,15 @@ class cache_fs {
 		
 		return readfile($file);
 	} # readfile()
-	
-	
+
+
 	/**
 	 * put_contents()
 	 *
+	 * @param $file
+	 * @param $contents
 	 * @return bool $success
-	 **/
+	 */
 
 	static function put_contents($file, $contents) {
 		$file = self::path_join($file);
@@ -116,16 +118,16 @@ class cache_fs {
 		
 		return true;
 	} # put_contents()
-	
-	
+
+
 	/**
 	 * flush()
 	 *
 	 * @param string $dir
-	 * @param int $timeout
+	 * @param bool|int $timeout
 	 * @param bool $recursive
 	 * @return bool $success
-	 **/
+	 */
 	
 	static function flush($dir = '/', $timeout = false, $recursive = true) {
 		if ( function_exists('is_multisite') && is_multisite() )
@@ -133,20 +135,23 @@ class cache_fs {
 		
 		return self::rm(self::path_join($dir), $timeout, $recursive);
 	} # flush()
-	
-	
+
+
 	/**
 	 * rm()
 	 *
 	 * @param string $dir
-	 * @param int $timeout
+	 * @param bool|int $timeout
 	 * @param bool $recursive
 	 * @return bool $success
-	 **/
+	 */
 
 	static protected function rm($dir, $timeout = false, $recursive = true) {
 		$dir = rtrim($dir, '/');
-		
+
+		if ( empty($dir) )
+			return true;
+
 		if ( !file_exists($dir) )
 			return true;
 		
@@ -172,14 +177,16 @@ class cache_fs {
 		
 		return $timeout || rmdir($dir) && $success;
 	} # rm()
-	
-	
+
+
 	/**
 	 * stats()
 	 *
 	 * @param string $dir
+	 * @param bool $timeout
+	 * @param null $bucket
 	 * @return array($total_pages, $expired_pages)
-	 **/
+	 */
 
 	static function stats($dir = '/', $timeout = false, $bucket = null) {
 		static $total_pages = 0;
