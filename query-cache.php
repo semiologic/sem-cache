@@ -12,13 +12,14 @@ class query_cache {
 	protected static $cache_id;
 	protected static $wp_query;
 	protected static $found;
-	
-	
+
+
 	/**
 	 * __construct()
 	 *
-	 * @return void
-	 **/
+	 * @param $wpdb
+	 * @return \query_cache
+	 */
 	
 	function __construct($wpdb) {
 		self::$wpdb = $wpdb;
@@ -54,14 +55,15 @@ class query_cache {
 	function __unset($var) {
 		unset(self::$wpdb->$var);
 	} # __unset()
-	
-	
+
+
 	/**
 	 * __get()
 	 *
-	 * @param string $name
+	 * @param $var
+	 * @internal param string $name
 	 * @return mixed $value
-	 **/
+	 */
 	
 	function __get($var) {
 		return self::$wpdb->$var;
@@ -324,7 +326,6 @@ class query_cache {
 	 **/
 
 	function get_posts($query) {
-		global $wpdb;
 		global $wp_query;
 		$results = false;
 		
@@ -479,7 +480,7 @@ class query_cache {
 			return false;
 		
 		$user_id = intval($user_id);
-		$has_private_posts = get_usermeta($user_id, 'has_private_posts');
+		$has_private_posts = get_user_meta($user_id, 'has_private_posts');
 		
 		if ( $has_private_posts )
 			return true;
@@ -490,17 +491,18 @@ class query_cache {
 		if ( !$has_private_posts )
 			$has_private_posts = array();
 		
-		update_usermeta($user_id, 'has_private_posts', $has_private_posts);
+		update_user_meta($user_id, 'has_private_posts', $has_private_posts);
 		
 		return !empty($has_private_posts);
 	} # has_private_posts()
-	
-	
+
+
 	/**
 	 * pre_get_posts()
 	 *
+	 * @param $wp_query
 	 * @return void
-	 **/
+	 */
 
 	static function pre_get_posts(&$wp_query) {
 		self::$wp_query = $wp_query;
@@ -523,6 +525,7 @@ class query_cache {
 	} # flush()
 } # query_cache
 
+global $wpdb;
 if ( ! $wpdb instanceof query_cache && $wpdb instanceof wpdb ) {
 	$wpdb = new query_cache($wpdb);
 	add_action('pre_get_posts', array('query_cache', 'pre_get_posts'));

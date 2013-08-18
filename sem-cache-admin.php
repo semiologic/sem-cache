@@ -903,7 +903,7 @@ EOS;
 	/**
 	 * disable_assets()
 	 *
-	 * @return vodi
+	 * @return void
 	 **/
 
 	static function disable_assets() {

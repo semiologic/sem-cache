@@ -67,7 +67,7 @@ class asset_cache {
 
 	static function concat_styles($file, $handles) {
 		global $wp_styles;
-		$css = '';
+		$css = array();
 		
 		foreach ( $handles as $handle ) {
 			$src = $wp_styles->registered[$handle]->src;
@@ -229,7 +229,7 @@ class asset_cache {
 
 	static function concat_scripts($file, $handles) {
 		global $wp_scripts;
-		$js = '';
+		$js = array();
 		
 		foreach ( $handles as $handle ) {
 			$src = $wp_scripts->registered[$handle]->src;

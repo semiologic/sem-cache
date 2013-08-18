@@ -38,8 +38,16 @@ The [Semiologic forum](http://forum.semiologic.com) is the best place to report 
 1. Upload the plugin folder to the `/wp-content/plugins/` directory
 2. Activate the plugin through the 'Plugins' menu in WordPress
 
+== Notes ==
+
+**Important: Turn the cache off (Settings->Cache) then back on to force new server rules to be written after upgrading the plugin**
+
 
 == Change Log ==
+
+= 2.4.1 =
+
+- Fix Undefined variable: wpdb in /wp-content/plugins/sem-cache/query-cache.php on line 526 warning
 
 = 2.4 =
 
