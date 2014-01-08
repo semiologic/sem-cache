@@ -286,4 +286,3 @@ if ( !SCRIPT_DEBUG ) {
 if ( !sem_css_debug ) {
 	add_filter('wp_print_styles', array('asset_cache', 'wp_print_styles'), 1000000);
 }
-?>

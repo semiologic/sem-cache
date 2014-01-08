@@ -9,7 +9,7 @@ class sem_cache_admin {
     /**
      * sem_cache_admin()
      */
-    function sem_cache_admin() {
+	public function __construct() {
         add_action('settings_page_sem-cache', array($this, 'save_options'), 0);
     }
 
@@ -148,8 +148,6 @@ class sem_cache_admin {
 			. '<form method="post" action="">';
 		
 		wp_nonce_field('sem_cache');
-		
-		screen_icon();
 		
 		list($files, $expired) = cache_fs::stats('/', cache_timeout);
 		
@@ -1030,6 +1028,4 @@ EOS;
 	} # disable_memcached()
 } # sem_cache_admin
 
-
 $sem_cache_admin = new sem_cache_admin();
-?>

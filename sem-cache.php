@@ -3,11 +3,12 @@
 Plugin Name: Semiologic Cache
 Plugin URI: http://www.semiologic.com/software/sem-cache/
 Description: An advanced caching module for WordPress.
-Version: 2.4.1
+Version: 2.5
 Author: Denis de Bernardy & Mike Koepke
 Author URI: http://www.getsemiologic.com
 Text Domain: sem-cache
 Domain Path: /lang
+License: Dual licensed under the MIT and GPLv2 licenses
 */
 
 
@@ -15,9 +16,7 @@ Domain Path: /lang
 Terms of use
 ------------
 
-This software is copyright Mesoconcepts and is distributed under the terms of the Mesoconcepts license. In a nutshell, you may freely use it for any purpose, but may not redistribute it without written permission.
-
-http://www.mesoconcepts.com/license/
+This software is copyright Denis de Bernardy & Mike Koepke, and is distributed under the terms of the MIT and GPLv2 licenses.
 **/
 
 load_plugin_textdomain('sem-cache', false, dirname(plugin_basename(__FILE__)) . '/lang');
@@ -58,7 +57,7 @@ class sem_cache {
     /**
      * sem_cache
      */
-    function sem_cache() {
+	public function __construct() {
         if (auto_enable)
             register_activation_hook(__FILE__, array($this, 'enable'));
         else
@@ -252,12 +251,12 @@ class sem_cache {
 			$extra = self::mod_deflate_rules();
 			$rules = $extra . $rules;
 		} // gzip rules
-
-		//vary header rules
-		$extra = self::vary_header_rules();
-		$rules = $extra . $rules;
  
         if ( (bool) get_site_option('static_cache') ) {
+	        //vary header rules
+			$extra = self::vary_header_rules();
+			$rules = $extra . $rules;
+
 	        $extra = self::mod_expires_rules();
                 $rules = $extra . $rules;
 
@@ -396,6 +395,7 @@ AddDefaultCharset $encoding
     Header append Vary: Accept-Encoding
   </FilesMatch>
 </IfModule>
+
 
 EOS;
 
@@ -1468,4 +1468,3 @@ EOS;
 
 
 $sem_cache = new sem_cache();
-?>

@@ -3,7 +3,7 @@ Contributors: Denis-de-Bernardy && Mike Koepke
 Donate link: http://www.semiologic.com/partners/
 Tags: semiologic
 Requires at least: 3.3
-Tested up to: 3.6
+Tested up to: 3.8
 Stable tag: trunk
 
 A high performance cache for WordPress.
@@ -44,6 +44,12 @@ The [Semiologic forum](http://forum.semiologic.com) is the best place to report 
 
 
 == Change Log ==
+
+= 2.5 =
+
+- Some Static Cache rules written to htaccess even if cached was turn off.
+- Fixed undefined variable in query_cache module
+- WP 3.8 compat
 
 = 2.4.1 =
 

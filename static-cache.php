@@ -104,7 +104,7 @@ class static_cache {
 		
 		if ( $client_etag || $client_modified ) {
 			foreach ( $headers as $header ) {
-				list($k, $v) = preg_split("/:\s*/", $header);
+				list($k, $v) = array_merge( preg_split("/:\s*/", $header), '');
 				switch ( strtolower($k) ) {
 				case 'etag':
 					$server_etag = trim(strip_tags($v));
@@ -361,4 +361,3 @@ class static_cache {
 } # static_cache
 
 static_cache::start();
-?>

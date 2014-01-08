@@ -21,7 +21,7 @@ class query_cache {
 	 * @return \query_cache
 	 */
 	
-	function __construct($wpdb) {
+	public function __construct($wpdb) {
 		self::$wpdb = $wpdb;
 		if ( !isset(self::$wpdb->queries) )
 			self::$wpdb->queries = array();
@@ -129,7 +129,7 @@ class query_cache {
 			}
 		} elseif ( $wp_the_query->is_page && preg_match("/^SELECT ID FROM $wpdb->posts WHERE post_parent = (\d+) AND post_type = 'page' LIMIT 1$/", $query, $post_id) ) {
 			$post_id = end($post_id);
-			$var = $this->get_body_class($post_id);
+			$var = $this->get_body_class($post_id, $query);
 		} elseif ( preg_match("/^SELECT `post_parent` FROM $wpdb->posts WHERE ID = (\d+) LIMIT 1$/", $query, $post_id) ) {
 			$post_id = end($post_id);
 			$var = $this->get_post_parent($post_id);
@@ -137,16 +137,17 @@ class query_cache {
 		
 		return $var !== false ? $var : self::$wpdb->get_var($query);
 	} # get_var()
-	
-	
+
+
 	/**
 	 * get_body_class()
 	 *
 	 * @param int $post_id
+	 * @param $query
 	 * @return int $is_parent
-	 **/
+	 */
 
-	function get_body_class($post_id) {
+	function get_body_class($post_id, $query) {
 		$var = false;
 		$post_id = (int) $post_id;
 		$post = wp_cache_get($post_id, 'posts');
@@ -533,4 +534,3 @@ if ( ! $wpdb instanceof query_cache && $wpdb instanceof wpdb ) {
 		add_filter('wp_redirect_status', array('query_cache', 'flush'));
 	add_action('flush_query_cache', array('query_cache', 'flush'));
 }
-?>

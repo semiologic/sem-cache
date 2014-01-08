@@ -429,4 +429,3 @@ class object_cache {
 } # object_cache
 
 $wp_object_cache = new object_cache;
-?>

@@ -227,4 +227,3 @@ class cache_fs {
 } # cache_fs
 
 cache_fs::start();
-?>
