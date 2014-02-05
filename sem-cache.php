@@ -3,7 +3,7 @@
 Plugin Name: Semiologic Cache
 Plugin URI: http://www.semiologic.com/software/sem-cache/
 Description: An advanced caching module for WordPress.
-Version: 2.5
+Version: 2.6 dev
 Author: Denis de Bernardy & Mike Koepke
 Author URI: http://www.getsemiologic.com
 Text Domain: sem-cache
@@ -377,7 +377,7 @@ AddDefaultCharset $encoding
 
 # Force UTF-8 for certain file formats.
 <IfModule mod_mime.c>
-    AddCharset utf-8 .atom .css .js .json .rss .vtt .webapp .xml
+    AddCharset utf-8 .atom .css .js .json .jsonld .rss .vtt .webapp .xml
 </IfModule>
 
 <IfModule mod_headers.c>
@@ -462,34 +462,6 @@ EOS;
 
 	$extra = <<<EOS
 
-# ----------------------------------------------------------------------
-# CORS-enabled images (@crossorigin)
-# Send CORS headers if browsers request them; enabled by default for images.
-# http://developer.mozilla.org/en/CORS_Enabled_Image
-# http://blog.chromium.org/2011/07/using-cross-domain-images-in-webgl-and.html
-# http://hacks.mozilla.org/2011/11/using-cors-to-load-webgl-textures-from-cross-domain-images/
-# http://wiki.mozilla.org/Security/Reviews/crossoriginAttribute
-# ----------------------------------------------------------------------
-
-<IfModule mod_setenvif.c>
-	<IfModule mod_headers.c>
-		<FilesMatch "\.(gif|png|jpe?g|svg|svgz|ico|webp)$">
-			SetEnvIf Origin ":" IS_CORS
-			Header set Access-Control-Allow-Origin "*" env=IS_CORS
-		</FilesMatch>
-	</IfModule>
-</IfModule>
-
-# ----------------------------------------------------------------------
-# Webfont access
-# Allow access from all domains for webfonts.
-# ----------------------------------------------------------------------
-
-<IfModule mod_headers.c>
-	<FilesMatch "\.(ttf|ttc|otf|eot|woff|font.css)$">
-		Header set Access-Control-Allow-Origin "*"
-	</FilesMatch>
-</IfModule>
 
 # ------------------------------------------------------------------------------
 # | Better website experience                                                  |
@@ -502,7 +474,7 @@ EOS;
     Header set X-UA-Compatible "IE=edge"
     # `mod_headers` can't match based on the content-type, however, we only
     # want to send this header for HTML pages and not for the other resources
-		<FilesMatch "\.(js|css|gif|png|jpe?g|pdf|xml|oga|ogg|m4a|ogv|mp4|m4v|webm|svg|svgz|eot|ttf|otf|woff|ico|webp|appcache|manifest|htc|crx|oex|xpi|safariextz|vcf)$" >
+    <FilesMatch "\.(appcache|atom|crx|css|cur|eot|f4[abpv]|flv|gif|htc|ico|jpe?g|js|json(ld)?|m4[av]|manifest|map|mp4|oex|og[agv]|opus|otf|pdf|png|rdf|rss|safariextz|svgz?|swf|tt[cf]|vcf|vtt|webapp|web[mp]|woff|xml|xpi)$">
         Header unset X-UA-Compatible
     </FilesMatch>
 </IfModule>
@@ -510,49 +482,24 @@ EOS;
 
 <IfModule mod_headers.c>
 	# No caching for dynamic files
-	<filesMatch "\.(php|cgi|pl|htm)$">
-		ExpiresDefault A0
+	<filesMatch "\.(php|cgi|pl|html|htm|xml)$">
 		Header set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
 		Header set Pragma "no-cache"
 	</filesMatch>
 
-	# 1 MIN
-	<filesMatch "\.(html)$">
-		ExpiresDefault A60
-		Header set Cache-Control "max-age=60, must-revalidate"
-	</filesMatch>
-
-	# 2 DAYS
-	<filesMatch "\.(xml|txt)$">
-		ExpiresDefault A172800
-		Header set Cache-Control "max-age=172800, must-revalidate"
-	</filesMatch>
-
-	# 1 WEEK
-	<filesMatch "\.(jpg|jpeg|png|gif|swf|js|css)$">
-		ExpiresDefault A604800
-		Header set Cache-Control "max-age=604800, must-revalidate"
-	</filesMatch>
-
 	# 1 MONTH
-	<filesMatch "\.(ico|pdf|flv)$">
-		ExpiresDefault A2419200
+	<filesMatch "\.(jpg|jpeg|png|gif|swf|ico|js|css|pdf|flv|txt)$">
 		Header set Cache-Control "max-age=2419200, must-revalidate"
-</filesMatch>
+	</filesMatch>
 
 </IfModule>
 
-	# Prevent some of the mobile network providers from modifying the content of
-	# your site: http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9.5.
+# Prevent mobile network providers from modifying the website's content.
+# http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9.5.
 
-	# <IfModule mod_headers.c>
-	#    Header set Cache-Control "no-transform"
-	# </IfModule># Prevent some of the mobile network providers from modifying the content of
-	# your site: http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9.5.
-
-<IfModule mod_headers.c>
-    Header set Cache-Control "no-transform"
-</IfModule>
+# <IfModule mod_headers.c>
+#    Header set Cache-Control "no-transform"
+# </IfModule>
 
 
 EOS;
@@ -588,6 +535,7 @@ EOS;
         AddOutputFilterByType DEFLATE application/atom+xml \
                                       application/javascript \
                                       application/json \
+                                      application/ld+json \
                                       application/rss+xml \
                                       application/vnd.ms-fontobject \
                                       application/x-font-ttf \
@@ -625,6 +573,7 @@ EOS;
 		BrowserMatch \bOpera !no-gzip
 	</IfModule>
 
+
 EOS;
 
 		return $extra;
@@ -643,7 +592,7 @@ EOS;
 
   # Audio
     AddType audio/mp4                                   m4a f4a f4b
-    AddType audio/ogg                                   oga ogg
+    AddType audio/ogg                                   oga ogg opus
 	AddType audio/wav                                   wav
 	AddType audio/wma                                   wma
 	AddType audio/x-realaudio                           ra ram
@@ -657,11 +606,14 @@ EOS;
 	AddType image/tiff                                  tif tiff
 	AddType image/png                                   png
 
+  # Data interchange
+    AddType application/json                            json map
+    AddType application/ld+json                         jsonld
+
   # JavaScript
-    # Normalize to standard type (it's sniffed in IE anyways):
+    # Normalize to standard type.
     # http://tools.ietf.org/html/rfc4329#section-7.2
     AddType application/javascript                      js
-    AddType application/json                            json
 
   # Video
     AddType video/mp4                                   mp4 m4v f4v f4p
@@ -698,7 +650,7 @@ EOS;
     AddType application/x-xpinstall                     xpi
     AddType application/xml                             atom rdf rss xml
     AddType image/webp                                  webp
-    AddType image/x-icon                                ico
+    AddType image/x-icon                                ico cur
     AddType text/cache-manifest                         appcache manifest
     AddType text/vtt                                    vtt
     AddType text/x-component                            htc
@@ -757,13 +709,14 @@ FileETag None
 
   # Data interchange
     ExpiresByType application/json                      "access plus 0 seconds"
+    ExpiresByType application/ld+json                   "access plus 0 seconds"
     ExpiresByType application/xml                       "access plus 0 seconds"
     ExpiresByType text/xml                              "access plus 0 seconds"
     ExpiresByType text/xsd                              "access plus 1 month"
     ExpiresByType text/xsl                              "access plus 1 month"
 
-  # Favicon (cannot be renamed!)
-    ExpiresByType image/x-icon                          "access plus 1 week"
+  # Favicon (cannot be renamed!) and cursor images
+    ExpiresByType image/x-icon                          "access plus 1 month"
 
   # HTML components (HTCs)
     ExpiresByType text/x-component                      "access plus 1 month"
@@ -799,6 +752,7 @@ FileETag None
     ExpiresByType video/divx                            "access plus 1 month"
     ExpiresByType video/quicktime                       "access plus 1 month"
     ExpiresByType video/mpeg                            "access plus 1 month"
+    ExpiresByType video/x-flv                           "access plus 1 month"
 
   # Web feeds
     ExpiresByType application/atom+xml                  "access plus 1 hour"

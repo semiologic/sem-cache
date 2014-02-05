@@ -17,6 +17,9 @@ foreach ( array(
 if ( !defined('cache_timeout') )
 	define('cache_timeout', 43200);
 
+if ( !defined('DONOTCACHEPAGE') )
+	define( 'DONOTCACHEPAGE', false );
+
 if ( static_cache && !class_exists('cache_fs') )
 	include dirname(__FILE__) . '/cache-fs.php';
 
@@ -257,7 +260,10 @@ class static_cache {
 	static function ob_callback($buffer) {
 		if ( !class_exists('sem_cache') )
 			return $buffer;
-		
+
+		if ( DONOTCACHEPAGE )
+			return $buffer;
+
 		# some things just shouldn't be cached
 		if ( self::$nocache && !in_array(self::$status_code, array(301, 302, 404))
 			|| !in_array(self::$status_code, array(200, 301, 302, 404)) ) {
@@ -285,7 +291,15 @@ class static_cache {
 			) ) {
 			return $buffer;
 		}
-		
+
+		#don't cache a contact form page due to spam prevention techniques
+		if ( preg_match("/(\bsem_contact_form\b)/i",$buffer) )
+				return $buffer;
+
+		#don't cache a page due if a sem_no_cache flag is found.  Provide manual way to exclude a page
+		if ( preg_match("/(\bsem_do_not_cache\b)/i",$buffer) )
+				return $buffer;
+
 		$permalink_structure = get_option('permalink_structure');
 		
 		# statically cache only when relevant
@@ -318,7 +332,10 @@ class static_cache {
 			return $buffer;
 		if ( preg_match("/(?=.*?\bandroid\b)(?=.*?\bmobile\b).*$/i", $_SERVER['HTTP_USER_AGENT']) )
 			return $buffer;  
-                
+
+		// made it through all the checks.  Let's minify the html now
+//		$buffer = self::minify_html( $buffer );
+
 		if ( self::$static ) {
 			$file = preg_replace("/#.*/", '', $_SERVER['REQUEST_URI']);
 			$file = '/static/' . trim($file, '/');
@@ -358,6 +375,42 @@ class static_cache {
 		
 		return $buffer;
 	} # ob_callback()
+
+	/**
+	 * minify_html()
+	 *
+	 * @param string $buffer
+	 * @return string $buffer
+	 **/
+	static function minify_html($buffer) {
+
+		// props: http://stackoverflow.com/questions/5312349/minifying-final-html-output-using-regular-expressions-with-codeigniter
+		ini_set("pcre.recursion_limit", "524");
+
+		$re = '%# Collapse ws everywhere but in blacklisted elements.
+		        (?>             # Match all whitespans other than single space.
+		          [^\S ]\s*     # Either one [\t\r\n\f\v] and zero or more ws,
+		        | \s{2,}        # or two or more consecutive-any-whitespace.
+		        ) # Note: The remaining regex consumes no text at all...
+		        (?=             # Ensure we are not in a blacklist tag.
+		          (?:           # Begin (unnecessary) group.
+		            (?:         # Zero or more of...
+		              [^<]++    # Either one or more non-"<"
+		            | <         # or a < starting a non-blacklist tag.
+		              (?!/?(?:textarea|pre)\b)
+		            )*+         # (This could be "unroll-the-loop"ified.)
+		          )             # End (unnecessary) group.
+		          (?:           # Begin alternation group.
+		            <           # Either a blacklist start tag.
+		            (?>textarea|pre)\b
+		          | \z          # or end of file.
+		          )             # End alternation group.
+		        )  # If we made it here, we are not in a blacklist tag.
+		        %ix';
+		$buffer = preg_replace($re, " ", $buffer);
+//		$buffer = preg_replace("/^\s+/m", "", $buffer);
+		return $buffer;
+	} #minify_html()
 } # static_cache
 
 static_cache::start();

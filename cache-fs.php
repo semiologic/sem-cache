@@ -156,7 +156,13 @@ class cache_fs {
 			return true;
 		
 		if ( !is_dir($dir) ) {
-			$success = ( $timeout && ( filemtime($dir) + $timeout >= time() ) ) || @unlink($dir);
+			$success = true;
+			if ( $timeout !== false ) {
+				if ( filemtime($dir) + $timeout >= time() )
+					$success = @unlink($dir);
+			}
+			else   // no timeout so just delete
+				$success = @unlink($dir);
             clearstatcache();
             return $success;
         }

@@ -27,6 +27,26 @@ It implements each and every one of the following:
 - Asset-level caching, which concatenates javascript and CSS files on the site's front end to avoid further hits to the server
 - GZip-level caching, which conditionally serves compressed files at the apache level (which is faster than using php)
 
+= Manual Disabling Page Cache =
+
+You have the ability to manually turn off caching for a given page.   The plugin supports 2 detection methods to not cache a page.
+
+If the text 'sem_do_not_cache' is found anywhere on the page, the plugin simple ignores generating a static version of the page.
+
+If you're using the Semiologic Scripts & Meta plugin, you can add
+
+	<!--sem_do_not_cache-->
+
+to the header area when editing the page.   Alternatively you can drop the <!--sem_do_not_cache--> into the HTML tab or a page to add to the page content.   The tag be hidden in the page content.
+
+OR
+
+If the PHP constant DONOTCACHEPAGE is set to 'true', caching of the page is ignored.
+
+	define( 'DONOTCACHEPAGE', true );
+
+Note: Asset caching (css and js) still occurs.  This flag on effects static page caching.
+
 
 = Help Me! =
 
@@ -44,6 +64,13 @@ The [Semiologic forum](http://forum.semiologic.com) is the best place to report 
 
 
 == Change Log ==
+
+= 2.6 =
+
+- Added ability to manually disable caching for a page.
+- Pages that include the Semiologic Contact Form widget are no longer cached.   Caching conflicted with spam prevention techniques and was resulting in occasional false positives.
+- Fix invalid operation warning message in the cache-fs.php file
+- Updated htaccess caching rules
 
 = 2.5 =
 
