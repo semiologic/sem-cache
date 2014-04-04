@@ -6,12 +6,65 @@
  **/
 
 class sem_cache_admin {
-    /**
-     * sem_cache_admin()
-     */
+	/**
+	 * Plugin instance.
+	 *
+	 * @see get_instance()
+	 * @type object
+	 */
+	protected static $instance = NULL;
+
+	/**
+	 * URL to this plugin's directory.
+	 *
+	 * @type string
+	 */
+	public $plugin_url = '';
+
+	/**
+	 * Path to this plugin's directory.
+	 *
+	 * @type string
+	 */
+	public $plugin_path = '';
+
+	/**
+	 * Access this plugin’s working instance
+	 *
+	 * @wp-hook plugins_loaded
+	 * @return  object of this class
+	 */
+	public static function get_instance()
+	{
+		NULL === self::$instance and self::$instance = new self;
+
+		return self::$instance;
+	}
+
+
+	/**
+	 * Constructor.
+	 *
+	 *
+	 */
+
 	public function __construct() {
-        add_action('settings_page_sem-cache', array($this, 'save_options'), 0);
+		$this->plugin_url    = plugins_url( '/', __FILE__ );
+		$this->plugin_path   = plugin_dir_path( __FILE__ );
+
+		$this->init();
     }
+
+
+	/**
+	 * init()
+	 *
+	 * @return void
+	 **/
+	function init() {
+		// more stuff: register actions and filters
+		add_action('settings_page_sem-cache', array($this, 'save_options'), 0);
+	}
 
     /**
 	 * save_options()
@@ -160,7 +213,7 @@ class sem_cache_admin {
 		$gzip_notice = array();
 		
 		if ( !self::can_memcached() ) {
-			$error = sprintf(__('<a href="%1$s">Memcache</a> is not installed on your server, or the php extension is misconfigured, or the daemon is not running. Note that shared hosts never offer memcache; you need a dedicated server or a VPS such as those offered by <a href="%2$s">Hub</a> to take advantage of it. Also note that there are two PHP extensions, and that only <a href="%1$s">this one</a> is supported.', 'sem-cache'), 'http://www.php.net/manual/en/book.memcache.php', 'http://hub.org');
+			$error = sprintf(__('<a href="%1$s">Memcache</a> is not installed on your server, or the php extension is misconfigured, or the daemon is not running. Note that shared hosts never offer memcache; you need a dedicated server or a VPS to take advantage of it. Also note that there are two PHP extensions, and that only <a href="%1$s">this one</a> is supported.', 'sem-cache'), 'http://www.php.net/manual/en/book.memcache.php');
 			$memory_errors[] = $error;
 			$query_errors[] = $error;
 			$object_errors[] = $error;
@@ -1028,4 +1081,5 @@ EOS;
 	} # disable_memcached()
 } # sem_cache_admin
 
-$sem_cache_admin = new sem_cache_admin();
+$sem_cache_admin = sem_cache_admin::get_instance();
+

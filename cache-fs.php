@@ -158,7 +158,8 @@ class cache_fs {
 		if ( !is_dir($dir) ) {
 			$success = true;
 			if ( $timeout !== false ) {
-				if ( filemtime($dir) + $timeout >= time() )
+				$filemtime = @filemtime($dir);
+				if ( $filemtime && (time() - $filemtime >= $timeout) )
 					$success = @unlink($dir);
 			}
 			else   // no timeout so just delete
@@ -181,7 +182,7 @@ class cache_fs {
 		
 		closedir($handle);
 		
-		return $timeout || rmdir($dir) && $success;
+		return $timeout || @rmdir($dir) && $success;
 	} # rm()
 
 

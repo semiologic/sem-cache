@@ -3,7 +3,7 @@
 Plugin Name: Semiologic Cache
 Plugin URI: http://www.semiologic.com/software/sem-cache/
 Description: An advanced caching module for WordPress.
-Version: 2.6
+Version: 2.7 dev
 Author: Denis de Bernardy & Mike Koepke
 Author URI: http://www.getsemiologic.com
 Text Domain: sem-cache
@@ -19,7 +19,6 @@ Terms of use
 This software is copyright Denis de Bernardy & Mike Koepke, and is distributed under the terms of the MIT and GPLv2 licenses.
 **/
 
-load_plugin_textdomain('sem-cache', false, dirname(plugin_basename(__FILE__)) . '/lang');
 
 /**
  * sem_cache
@@ -54,103 +53,181 @@ if ( !defined('auto_enable') )
 
 
 class sem_cache {
-    /**
-     * sem_cache
-     */
+	/**
+	 * Plugin instance.
+	 *
+	 * @see get_instance()
+	 * @type object
+	 */
+	protected static $instance = NULL;
+
+	/**
+	 * URL to this plugin's directory.
+	 *
+	 * @type string
+	 */
+	public $plugin_url = '';
+
+	/**
+	 * Path to this plugin's directory.
+	 *
+	 * @type string
+	 */
+	public $plugin_path = '';
+
+	/**
+	 * Access this plugin’s working instance
+	 *
+	 * @wp-hook plugins_loaded
+	 * @return  object of this class
+	 */
+	public static function get_instance()
+	{
+		NULL === self::$instance and self::$instance = new self;
+
+		return self::$instance;
+	}
+
+	/**
+	 * Loads translation file.
+	 *
+	 * Accessible to other classes to load different language files (admin and
+	 * front-end for example).
+	 *
+	 * @wp-hook init
+	 * @param   string $domain
+	 * @return  void
+	 */
+	public function load_language( $domain )
+	{
+		load_plugin_textdomain(
+			$domain,
+			FALSE,
+			$this->plugin_path . 'lang'
+		);
+	}
+
+	/**
+	 * Constructor.
+	 *
+	 *
+	 */
+
 	public function __construct() {
-        if (auto_enable)
-            register_activation_hook(__FILE__, array($this, 'enable'));
-        else
-            register_activation_hook(__FILE__, array($this, 'disable'));
-        register_deactivation_hook(__FILE__, array($this, 'disable'));
+		$this->plugin_url    = plugins_url( '/', __FILE__ );
+		$this->plugin_path   = plugin_dir_path( __FILE__ );
+		$this->load_language( 'sem-cache' );
 
-        if ( !class_exists('cache_fs') )
-        	include dirname(__FILE__) . '/cache-fs.php';
-
-        if ( !is_admin() ) {
-        	if ( get_site_option('query_cache') )
-        		include dirname(__FILE__) . '/query-cache.php';
-
-        	if ( get_site_option('asset_cache') )
-        		include dirname(__FILE__) . '/asset-cache.php';
-        }
-
-        if ( class_exists('static_cache') ) {
-        	add_action('cache_timeout', array($this, 'cache_timeout'));
-        	if ( !wp_next_scheduled('cache_timeout') )
-        		wp_schedule_event(time(), 'hourly', 'cache_timeout');
-        	if ( sem_cache_debug && ( wp_next_scheduled('cache_timeout') - time() > cache_timeout ) )
-        		wp_schedule_single_event(time() + cache_timeout, 'cache_timeout');
-
-        	add_filter('status_header', array('static_cache', 'status_header'), 100, 2);
-        	add_filter('nocache_headers', array('static_cache', 'disable'));
-        	add_filter('wp_redirect_status', array('static_cache', 'wp_redirect_status'), 50);
-        }
-
-        add_action('wp_footer', array($this, 'stats'), 1000000);
-        add_action('admin_footer', array($this, 'stats'), 1000000);
-
-        add_filter('mod_rewrite_rules', array($this, 'rewrite_rules'), 1000000);
-
-        add_action('admin_menu', array($this, 'admin_menu'));
-        add_action('sem_admin_menu_settings', array($this, 'front_menu'));
-
-        function sem_cache_admin() {
-         	include_once dirname(__FILE__) . '/sem-cache-admin.php';
-        } # sem_cache_admin()
-
-        foreach ( array('load-settings_page_sem-cache') as $hook )
-        	add_action($hook, 'sem_cache_admin');
-
-        if ( static_cache || memory_cache || get_site_option('query_cache') ) :
-
-            add_action('pre_post_update', array($this, 'pre_flush_post'));
-
-            foreach ( array(
-                'save_post',
-                'delete_post',
-                ) as $hook ) {
-                add_action($hook, array($this, 'flush_post'), 1); // before _save_post_hook()
-            }
-
-            add_action('wp_update_comment_count', array($this, 'flush_post'), 1, 3); // before _save_post_hook()
-
-            foreach ( array(
-                'switch_theme',
-                'update_option_active_plugins',
-                'update_option_show_on_front',
-                'update_option_page_on_front',
-                'update_option_page_for_posts',
-                'update_option_sidebars_widgets',
-                'update_option_sem5_options',
-                'update_option_sem6_options',
-                'generate_rewrite_rules',
-                    'edit_user_profile_update',
-
-                'flush_cache',
-                'after_db_upgrade',
-
-                'update_option_sem_seo',
-                'update_option_script_manager',
-                ) as $hook ) {
-                add_action($hook, array($this, 'flush_cache'));
-            }
-
-            foreach ( array(
-                'switch_theme',
-                    'activated_plugin',
-                'deactivated_plugin',
-                'update_option_script_manager',
-                    'save_entry_script_manager',
-                ) as $hook ) {
-                add_action($hook, array($this, 'flush_assets'));
-            }
-
-            if ( $_POST )
-                add_action('load-widgets.php', array($this, 'flush_cache'));
-
-        endif;
+		add_action( 'plugins_loaded', array ( $this, 'init' ) );
     }
+
+	/**
+	 * init()
+	 *
+	 * @return void
+	 **/
+
+	function init() {
+		// more stuff: register actions and filters
+		if (auto_enable)
+			register_activation_hook(__FILE__, array($this, 'enable'));
+		else
+			register_activation_hook(__FILE__, array($this, 'disable'));
+		register_deactivation_hook(__FILE__, array($this, 'disable'));
+
+		if ( !class_exists('cache_fs') )
+			include $this->plugin_path . '/cache-fs.php';
+
+		if ( !is_admin() ) {
+			if ( get_site_option('query_cache') )
+				include $this->plugin_path . '/query-cache.php';
+
+			if ( get_site_option('asset_cache') )
+				include $this->plugin_path . '/asset-cache.php';
+		}
+
+		if ( class_exists('static_cache') ) {
+			add_action('cache_timeout', array($this, 'cache_timeout'));
+
+			if ( !wp_next_scheduled('cache_timeout') )
+				wp_schedule_event(time(), 'hourly', 'cache_timeout');
+
+			if ( sem_cache_debug && ( wp_next_scheduled('cache_timeout') - time() > cache_timeout ) )
+				wp_schedule_single_event(time() + cache_timeout, 'cache_timeout');
+
+			add_filter('status_header', array('static_cache', 'status_header'), 100, 2);
+			add_filter('nocache_headers', array('static_cache', 'disable'));
+			add_filter('wp_redirect_status', array('static_cache', 'wp_redirect_status'), 50);
+		}
+
+		add_action('wp_footer', array($this, 'stats'), 1000000);
+		add_action('admin_footer', array($this, 'stats'), 1000000);
+
+		add_filter('mod_rewrite_rules', array($this, 'rewrite_rules'), 1000000);
+
+		add_action('admin_menu', array($this, 'admin_menu'));
+		add_action('sem_admin_menu_settings', array($this, 'front_menu'));
+
+		foreach ( array('load-settings_page_sem-cache') as $hook )
+			add_action($hook, array($this, 'sem_cache_admin'));
+
+		if ( static_cache || memory_cache || get_site_option('query_cache') ) :
+
+			add_action('pre_post_update', array($this, 'pre_flush_post'));
+
+			foreach ( array(
+				'save_post',
+				'delete_post',
+				) as $hook ) {
+				add_action($hook, array($this, 'flush_post'), 1); // before _save_post_hook()
+			}
+
+			add_action('wp_update_comment_count', array($this, 'flush_post'), 1, 3); // before _save_post_hook()
+
+			foreach ( array(
+				'switch_theme',
+				'update_option_active_plugins',
+				'update_option_show_on_front',
+				'update_option_page_on_front',
+				'update_option_page_for_posts',
+				'update_option_sidebars_widgets',
+				'update_option_sem5_options',
+				'update_option_sem6_options',
+				'generate_rewrite_rules',
+		        'edit_user_profile_update',
+				'flush_cache',
+				'after_db_upgrade',
+				'update_option_sem_seo',
+				'update_option_script_manager',
+				) as $hook ) {
+				add_action($hook, array($this, 'flush_cache'));
+			}
+
+			foreach ( array(
+				'switch_theme',
+				'activated_plugin',
+				'deactivated_plugin',
+				'update_option_script_manager',
+				'save_entry_script_manager',
+			    ) as $hook ) {
+			    add_action($hook, array($this, 'flush_assets'));
+			}
+
+			if ( $_POST )
+			  add_action('load-widgets.php', array($this, 'flush_cache'));
+
+			endif;
+	}
+
+
+	/**
+	* sem_cache_admin()
+	*
+	* @return void
+	**/
+	function sem_cache_admin() {
+		include_once $this->plugin_path . '/sem-cache-admin.php';
+	} # sem_cache_admin()
 
     /**
 	 * admin_menu()
@@ -1420,5 +1497,4 @@ EOS;
 	}
 } # sem_cache
 
-
-$sem_cache = new sem_cache();
+$sem_cache = sem_cache::get_instance();

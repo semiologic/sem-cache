@@ -27,7 +27,7 @@ It implements each and every one of the following:
 - Asset-level caching, which concatenates javascript and CSS files on the site's front end to avoid further hits to the server
 - GZip-level caching, which conditionally serves compressed files at the apache level (which is faster than using php)
 
-= Manual Disabling Page Cache =
+= Manual Disabling of Page Cache =
 
 You have the ability to manually turn off caching for a given page.   The plugin supports 2 detection methods to not cache a page.
 
@@ -45,7 +45,7 @@ If the PHP constant DONOTCACHEPAGE is set to 'true', caching of the page is igno
 
 	define( 'DONOTCACHEPAGE', true );
 
-Note: Asset caching (css and js) still occurs.  This flag on effects static page caching.
+Note: Asset caching (css and js) still occurs.  This flag only effects static page caching.
 
 
 = Help Me! =
@@ -64,6 +64,12 @@ The [Semiologic forum](http://forum.semiologic.com) is the best place to report 
 
 
 == Change Log ==
+
+= 2.7 =
+
+- Code refactoring
+- Silence 'Directory not empty' warning message in the cache-fs.php file
+- Further tweaking to fix invalid operation warning message in the cache-fs.php file
 
 = 2.6 =
 
