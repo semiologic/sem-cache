@@ -3,7 +3,7 @@ Contributors: Denis-de-Bernardy && Mike Koepke
 Donate link: http://www.semiologic.com/partners/
 Tags: semiologic
 Requires at least: 3.3
-Tested up to: 3.8
+Tested up to: 3.9
 Stable tag: trunk
 
 A high performance cache for WordPress.
@@ -70,6 +70,7 @@ The [Semiologic forum](http://forum.semiologic.com) is the best place to report 
 - Code refactoring
 - Silence 'Directory not empty' warning message in the cache-fs.php file
 - Further tweaking to fix invalid operation warning message in the cache-fs.php file
+- WP 3.9 compat
 
 = 2.6 =
 

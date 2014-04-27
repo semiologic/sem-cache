@@ -1,167 +1,168 @@
-# Semiologic Cache pot file.
-# Copyright (C) 2010 Mesoconcepts <http://www.mesoconcepts.com>
+# Copyright (C) 2014 Semiologic Cache
 # This file is distributed under the same license as the Semiologic Cache package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
-#
-#, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: 2.0\n"
-"Report-Msgid-Bugs-To: https://tickets.semiologic.com\n"
-"POT-Creation-Date: 2010-01-05 13:07+0100\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Project-Id-Version: Semiologic Cache 2.7\n"
+"Report-Msgid-Bugs-To: http://wordpress.org/support/plugin/sem-cache\n"
+"POT-Creation-Date: 2014-04-27 23:27:07+00:00\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"PO-Revision-Date: 2014-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
-"MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=CHARSET\n"
-"Content-Transfer-Encoding: 8bit\n"
 
-#: sem-cache-admin.php:38
+#: sem-cache-admin.php:94
+msgid ""
+"On multisite installations, the cache can only be bulk-flushed manually."
+msgstr ""
+
+#: sem-cache-admin.php:112
 msgid "Cache Flushed."
 msgstr ""
 
-#: sem-cache-admin.php:53
+#: sem-cache-admin.php:127
 msgid "Settings saved. Cache Disabled."
 msgstr ""
 
-#: sem-cache-admin.php:99
+#: sem-cache-admin.php:175
 msgid "Settings saved. Cache Enabled."
 msgstr ""
 
-#: sem-cache-admin.php:141
-#, php-format
+#: sem-cache-admin.php:216
 msgid ""
 "<a href=\"%1$s\">Memcache</a> is not installed on your server, or the php "
 "extension is misconfigured, or the daemon is not running. Note that shared "
-"hosts never offer memcache; you need a dedicated server or a VPS such as "
-"those offered by <a href=\"%2$s\">Hub</a> to take advantage of it. Also note "
-"that there are two PHP extensions, and that only <a href=\"%1$s\">this one</"
-"a> is supported."
+"hosts never offer memcache; you need a dedicated server or a VPS to take "
+"advantage of it. Also note that there are two PHP extensions, and that only "
+"<a href=\"%1$s\">this one</a> is supported."
 msgstr ""
 
-#: sem-cache-admin.php:146
+#: sem-cache-admin.php:221
 msgid ""
 "WP cannot overwrite the object-cache.php file in your wp-content folder. The "
 "file needs to be writable by the server."
 msgstr ""
 
-#: sem-cache-admin.php:153
-#, php-format
+#: sem-cache-admin.php:228
 msgid ""
 "The Query Cache requires PHP 5.1 or more. Your server is currently running "
 "PHP %s. Please contact your host and have them upgrade PHP."
 msgstr ""
 
-#: sem-cache-admin.php:158
+#: sem-cache-admin.php:233
 msgid "Safe mode or an open_basedir restriction is enabled on your server."
 msgstr ""
 
-#: sem-cache-admin.php:164
+#: sem-cache-admin.php:239
 msgid ""
 "WP cannot overwrite your site's .htaccess file to insert new rewrite rules. "
 "The file needs to be writable by your server."
 msgstr ""
 
-#: sem-cache-admin.php:169
+#: sem-cache-admin.php:244
 msgid ""
 "WP cannot overwrite your site's .htaccess file to insert extra instructions. "
 "The file needs to be writable by your server."
 msgstr ""
 
-#: sem-cache-admin.php:174
+#: sem-cache-admin.php:249
 msgid ""
 "WP cannot define a WP_CACHE constant in your site's wp-config.php file. It "
 "needs to be added manually, or the file needs to be writable by the server."
 msgstr ""
 
-#: sem-cache-admin.php:181
+#: sem-cache-admin.php:256
 msgid ""
 "WP cannot overwrite the advanced-cache.php file in your wp-content folder. "
 "The file needs to be writable by the server."
 msgstr ""
 
-#: sem-cache-admin.php:188
+#: sem-cache-admin.php:263
 msgid ""
 "WP cannot create or write to the cache folder in your site's wp-content "
 "folder. It or the wp-content folder needs to be writable by the server."
 msgstr ""
 
-#: sem-cache-admin.php:195
+#: sem-cache-admin.php:270
 msgid ""
 "mod_deflate is required in order to allow Apache to conditionally compress "
 "the files it sends. (mod_gzip is not supported because it is too resource "
 "hungry.)  Please contact your host so they configure Apache accordingly."
 msgstr ""
 
-#: sem-cache-admin.php:200
+#: sem-cache-admin.php:275
 msgid ""
 "mod_headers is required in order to avoid that proxies serve gzipped items "
 "to user agents who cannot use them. Please contact your host so they "
 "configure Apache accordingly."
 msgstr ""
 
-#: sem-cache-admin.php:205
+#: sem-cache-admin.php:280
 msgid ""
 "gzip caching requires mod_deflate and mod_headers, but the Semiologic Cache "
 "plugin cannot determine whether they are installed on your server. Please "
 "check with your host."
 msgstr ""
 
-#: sem-cache-admin.php:209
+#: sem-cache-admin.php:285
+msgid ""
+"The filesystem-based cache cannot be enabled on multisite installations."
+msgstr ""
+
+#: sem-cache-admin.php:290
 msgid "Filesystem-based static cache errors"
 msgstr ""
 
-#: sem-cache-admin.php:210
+#: sem-cache-admin.php:291
 msgid "Memcache-based static cache errors"
 msgstr ""
 
-#: sem-cache-admin.php:211
+#: sem-cache-admin.php:292
 msgid "Query cache errors"
 msgstr ""
 
-#: sem-cache-admin.php:212
+#: sem-cache-admin.php:293
 msgid "Object cache errors"
 msgstr ""
 
-#: sem-cache-admin.php:213
+#: sem-cache-admin.php:294
 msgid "Asset cache errors"
 msgstr ""
 
-#: sem-cache-admin.php:214
+#: sem-cache-admin.php:295
 msgid "Gzip cache errors"
 msgstr ""
 
-#: sem-cache-admin.php:215
+#: sem-cache-admin.php:296
 msgid "Gzip cache notice"
 msgstr ""
 
-#: sem-cache-admin.php:228
+#: sem-cache-admin.php:309
 msgid "Cache Settings"
 msgstr ""
 
-#: sem-cache-admin.php:234
+#: sem-cache-admin.php:315
 msgid "Quick and Easy"
 msgstr ""
 
-#: sem-cache-admin.php:238
+#: sem-cache-admin.php:319
 msgid "Turn the cache on"
 msgstr ""
 
-#: sem-cache-admin.php:242
+#: sem-cache-admin.php:323
 msgid "Turn the cache off"
 msgstr ""
 
-#: sem-cache-admin.php:246
-#, php-format
+#: sem-cache-admin.php:327
 msgid "Flush %d cached files"
 msgstr ""
 
-#: sem-cache-admin.php:250
-#, php-format
+#: sem-cache-admin.php:331
 msgid "Flush %d expired files"
 msgstr ""
 
-#: sem-cache-admin.php:253
+#: sem-cache-admin.php:334
 msgid ""
 "The first of the above four buttons will autodetect the best means to "
 "improve the performance of your site, and turn the cache on. The second one "
@@ -169,19 +170,19 @@ msgid ""
 "to flushing the cache."
 msgstr ""
 
-#: sem-cache-admin.php:260
+#: sem-cache-admin.php:341
 msgid "Static Cache"
 msgstr ""
 
-#: sem-cache-admin.php:274
+#: sem-cache-admin.php:355
 msgid "Serve filesystem-based, static versions of my site's web pages."
 msgstr ""
 
-#: sem-cache-admin.php:288
+#: sem-cache-admin.php:369
 msgid "Serve memcache-based, static versions of my site's web pages."
 msgstr ""
 
-#: sem-cache-admin.php:292
+#: sem-cache-admin.php:373
 msgid ""
 "The static cache will attempt to serve previously rendered version of the "
 "requested web pages to visitors who aren't logged in. The key drawback is "
@@ -191,7 +192,7 @@ msgid ""
 "elements that are introduced at the php level from working."
 msgstr ""
 
-#: sem-cache-admin.php:295
+#: sem-cache-admin.php:376
 msgid ""
 "Key web pages on your site will get refreshed when you edit your posts and "
 "pages, so as to ensure they're reasonably fresh. Newly approved comments "
@@ -199,7 +200,7 @@ msgid ""
 "Statically cached web pages expire after 12 hours."
 msgstr ""
 
-#: sem-cache-admin.php:298
+#: sem-cache-admin.php:379
 msgid ""
 "The benefit of the filesystem-based static cache is that your site's key web "
 "pages, such as the site's front page or individual posts, will be served "
@@ -207,7 +208,7 @@ msgid ""
 "is getting hammered by excrutiating traffic."
 msgstr ""
 
-#: sem-cache-admin.php:301
+#: sem-cache-admin.php:382
 msgid ""
 "The memcache-based static cache works in a similar manner, but stores cached "
 "pages in memcache rather than on the filesystem. PHP is always loaded, so "
@@ -215,7 +216,7 @@ msgid ""
 "filesystem for other web pages."
 msgstr ""
 
-#: sem-cache-admin.php:304
+#: sem-cache-admin.php:385
 msgid ""
 "You'll usually want both turned on, in order to get the best of both worlds. "
 "The only exception is if your site is hosted on multiple servers: in this "
@@ -223,21 +224,21 @@ msgid ""
 "introduced by the filesystem's synchronisations from a server to the next."
 msgstr ""
 
-#: sem-cache-admin.php:313
+#: sem-cache-admin.php:394
 msgid "Query Cache"
 msgstr ""
 
-#: sem-cache-admin.php:327
+#: sem-cache-admin.php:408
 msgid "Cache MySQL query results in memory."
 msgstr ""
 
-#: sem-cache-admin.php:331
+#: sem-cache-admin.php:412
 msgid ""
 "The query cache lets WordPress work in a fully dynamic manner, while doing "
 "its best to avoid hits to the MySQL database."
 msgstr ""
 
-#: sem-cache-admin.php:334
+#: sem-cache-admin.php:415
 msgid ""
 "The query cache primarily benefits commentors and users who are logged in; "
 "in particular yourself. These users cannot benefit from a static cache, "
@@ -245,22 +246,22 @@ msgid ""
 "specific to them; but they fully benefit from a query cache."
 msgstr ""
 
-#: sem-cache-admin.php:337
+#: sem-cache-admin.php:418
 msgid ""
 "The query cache's refresh policy is similar to that of the memory-based "
 "static cache: key queries are flushed whenever you edit posts or pages, or "
 "approve new comments. All of the remaining queries expire after 12 hours."
 msgstr ""
 
-#: sem-cache-admin.php:345
+#: sem-cache-admin.php:426
 msgid "Object Cache"
 msgstr ""
 
-#: sem-cache-admin.php:359
+#: sem-cache-admin.php:440
 msgid "Make WordPress objects persistent."
 msgstr ""
 
-#: sem-cache-admin.php:363
+#: sem-cache-admin.php:444
 msgid ""
 "The object cache stores granular bits of information in memcache, and makes "
 "them available from a page to the next. This allows WordPress to load web "
@@ -268,91 +269,104 @@ msgid ""
 "individual entries from the database."
 msgstr ""
 
-#: sem-cache-admin.php:366
+#: sem-cache-admin.php:447
 msgid ""
 "The object cache's primary benefit is that it is always accurate: at no time "
 "will it ever serve data that is potentially outdated."
 msgstr ""
 
-#: sem-cache-admin.php:369
+#: sem-cache-admin.php:450
 msgid ""
 "The object cache is automatically turned on, and cannot be disabled, if you "
 "use the memory-based static cache or the query cache."
 msgstr ""
 
-#: sem-cache-admin.php:377
+#: sem-cache-admin.php:458
 msgid "Asset Cache"
 msgstr ""
 
-#: sem-cache-admin.php:391
+#: sem-cache-admin.php:472
 msgid "Enable the asset cache."
 msgstr ""
 
-#: sem-cache-admin.php:395
+#: sem-cache-admin.php:476
 msgid ""
 "The asset cache speeds your site up by minimizing the number of server "
 "requests. It achieve this by concatenating your javascript and CSS files on "
 "the front end."
 msgstr ""
 
-#: sem-cache-admin.php:398
+#: sem-cache-admin.php:479
 msgid ""
 "This setting should always be turned on, unless you're in the process of "
 "manually editing these assets."
 msgstr ""
 
-#: sem-cache-admin.php:406
+#: sem-cache-admin.php:487
 msgid "File Compression"
 msgstr ""
 
-#: sem-cache-admin.php:420
+#: sem-cache-admin.php:501
 msgid "Enable text file compression."
 msgstr ""
 
-#: sem-cache-admin.php:424
+#: sem-cache-admin.php:505
 msgid ""
 "Compressing files that are sent by your site trims the load time by as much "
 "as 70%. The file compression itself is taken care of at the Apache level, by "
 "using mod_deflate."
 msgstr ""
 
-#: sem-cache-admin.php:427
+#: sem-cache-admin.php:508
 msgid ""
 "This setting should always be turned on, unless you're in the process of "
 "manually editing files on your site."
 msgstr ""
 
-#: sem-cache-admin.php:438
+#: sem-cache-admin.php:519
 msgid "Save Changes"
 msgstr ""
 
-#: sem-cache-admin.php:651
-#, php-format
+#: sem-cache-admin.php:784
 msgid "Error: Failed to create %s."
 msgstr ""
 
-#: sem-cache-admin.php:683 sem-cache-admin.php:919
-#, php-format
+#: sem-cache-admin.php:816 sem-cache-admin.php:1052
 msgid "Error: Failed to write %s."
 msgstr ""
 
-#: sem-cache-admin.php:729 sem-cache-admin.php:770
+#: sem-cache-admin.php:862 sem-cache-admin.php:903
 msgid "Error: Failed to override the WP_CACHE define in wp-config.php."
 msgstr ""
 
-#: sem-cache-admin.php:780 sem-cache-admin.php:944
-#, php-format
+#: sem-cache-admin.php:913 sem-cache-admin.php:1077
 msgid "Error: Failed to delete %s."
 msgstr ""
 
+#. #-#-#-#-#  sem-cache.pot (Semiologic Cache 2.7)  #-#-#-#-#
+#. Plugin Name of the plugin/theme
 #: sem-cache-info.php:2
 msgid "Semiologic Cache"
 msgstr ""
 
+#. #-#-#-#-#  sem-cache.pot (Semiologic Cache 2.7)  #-#-#-#-#
+#. Description of the plugin/theme
 #: sem-cache-info.php:3
 msgid "An advanced caching module for WordPress."
 msgstr ""
 
-#: sem-cache.php:62 sem-cache.php:63 sem-cache.php:83
+#: sem-cache.php:243 sem-cache.php:244 sem-cache.php:267
 msgid "Cache"
+msgstr ""
+
+#. Plugin URI of the plugin/theme
+msgid "http://www.semiologic.com/software/sem-cache/"
+msgstr ""
+
+#. Author of the plugin/theme
+msgid "Denis de Bernardy & Mike Koepke"
+msgstr ""
+
+#. Author URI of the plugin/theme
+msgid "http://www.getsemiologic.com"
 msgstr ""
