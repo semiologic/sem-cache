@@ -65,6 +65,14 @@ The [Semiologic forum](http://forum.semiologic.com) is the best place to report 
 
 == Change Log ==
 
+= 2.8 =
+
+- Revamp of css and javascript file concatenating.  Now working correctly especially footer scripts
+- Fix bug in handling of external css files only starting with url of /example.com/file/..... (no http: or https:)
+- Initial support for css compression.   Seeing 10-25% file size improvements.
+- Caches flushed on WP upgrade
+
+
 = 2.7 =
 
 - Code refactoring
