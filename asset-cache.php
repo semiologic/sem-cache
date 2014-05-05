@@ -68,8 +68,8 @@ class asset_cache {
 			wp_enqueue_style('styles_concat', content_url() . '/cache' . $file);
 		}
 
-		$wp_styles->do_concat = true;
-		$wp_styles->do_items();
+//		$wp_styles->do_concat = true;
+//		$wp_styles->do_items();
 	} # wp_print_styles()
 	
 	

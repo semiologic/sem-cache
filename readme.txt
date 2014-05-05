@@ -65,6 +65,10 @@ The [Semiologic forum](http://forum.semiologic.com) is the best place to report 
 
 == Change Log ==
 
+= 2.8.1 =
+
+- css script could be moved to footer area and impact site presentation.
+
 = 2.8 =
 
 - Revamp of css and javascript file concatenating.  Now working correctly especially footer scripts
