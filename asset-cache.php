@@ -109,7 +109,7 @@ class asset_cache {
 		
 		cache_fs::put_contents($file, implode("\n\n", $css));
 	} # concat_styles()
-	
+
 	/**
 	 * compress_css()
 	 *
@@ -118,14 +118,22 @@ class asset_cache {
 	 **/
 
 	static function compress_css( $buffer ) {
-        /* remove comments */
+
+		// compress crlf
+		$buffer = str_replace("\r\n", "\n", $buffer);
+
+		// Normalize whitespace
+		$buffer = preg_replace( '/\s+/', ' ', $buffer );
+
+        // remove comments
         $buffer = preg_replace('!/\*[^*]*\*+([^/][^*]*\*+)*/!', '', $buffer);
-        /* remove tabs, spaces, newlines, etc. */
-        $buffer = str_replace(array("\r\n","\r","\n","\t",'  ','    ','     '), '', $buffer);
-        /* remove other spaces before/after ; */
-        $buffer = preg_replace(array('(( )+{)','({( )+)'), '{', $buffer);
-        $buffer = preg_replace(array('(( )+})','(}( )+)','(;( )*})'), '}', $buffer);
-        $buffer = preg_replace(array('(;( )+)','(( )+;)'), ';', $buffer);
+
+		// remove ws around { } and last semicolon in declaration block
+		$buffer = preg_replace('/\\s*{\\s*/', '{', $buffer);
+		$buffer = preg_replace('/;?\\s*}\\s*/', '}', $buffer);
+
+        // remove ws surrounding semicolons
+		$buffer = preg_replace('/\\s*;\\s*/', ';', $buffer);
 
 		// remove ws between rules and colons
         $buffer = preg_replace('/
@@ -139,11 +147,26 @@ class asset_cache {
                 (\\b|[#\'"])        # 3 = first character of a value
             /x', '$1$2:$3', $buffer);
 
+		// Strip leading 0 on decimal values (converts 0.5px into .5px)
+		$buffer = preg_replace( '/(:| )0\.([0-9]+)(%|em|ex|px|in|cm|mm|pt|pc)/i', '${1}.${2}${3}', $buffer );
+
+		// Strip units if value is 0 (converts 0px to 0)
+		$buffer = preg_replace( '/(:| )(\.?)0(%|em|ex|px|in|cm|mm|pt|pc)/i', '${1}0', $buffer );
+
+		// Convert all zeros value into short-hand
+		$buffer = preg_replace( '/0 0 0 0/', '0', $buffer );
+
 		// minimize hex colors
         $buffer = preg_replace('/([^=])#([a-f\\d])\\2([a-f\\d])\\3([a-f\\d])\\4([\\s;\\}])/i'
             , '$1#$2$3$4$5', $buffer);
 
-        return $buffer;
+		// replace any ws involving newlines with a single newline
+		$buffer= preg_replace('/[ \\t]*\\n+\\s*/', "\n", $buffer);
+
+        // separate common descendent selectors w/ newlines (to limit line lengths)
+		$buffer = preg_replace('/([\\w#\\.\\*]+)\\s+([\\w#\\.\\*]+){/', "$1\n$2{", $buffer);
+
+        return trim($buffer);
 	} # compress_css
 
 	/**

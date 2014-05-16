@@ -65,9 +65,13 @@ The [Semiologic forum](http://forum.semiologic.com) is the best place to report 
 
 == Change Log ==
 
+= 2.8.2 =
+
+- Further optimization of css compression code.
+
 = 2.8.1 =
 
-- css script could be moved to footer area and impact site presentation.
+- Css script could be moved to footer area impacting site presentation.
 
 = 2.8 =
 
