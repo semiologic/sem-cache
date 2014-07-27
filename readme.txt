@@ -65,7 +65,7 @@ The [Semiologic forum](http://forum.semiologic.com) is the best place to report 
 
 == Change Log ==
 
-= 2.8.3 = 
+= 2.8.3 =
 
 - Fix some PHP 5.4+ strict warnings
 
