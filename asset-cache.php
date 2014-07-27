@@ -362,13 +362,25 @@ class asset_cache {
 		return $str;
 	} # strip_bom()
 
-	function startsWith($haystack, $needle)
+	/**
+	 * startsWith()
+	 *
+	 * @param string $str
+	 * @return string $str
+	 **/
+	static function startsWith($haystack, $needle)
 	{
 	     $length = strlen($needle);
 	     return (substr($haystack, 0, $length) === $needle);
 	}
 
-	function endsWith($haystack, $needle)
+	/**
+	 * endsWith()
+	 *
+	 * @param string $str
+	 * @return string $str
+	 **/
+	static function endsWith($haystack, $needle)
 	{
 	    $length = strlen($needle);
 	    if ($length == 0) {

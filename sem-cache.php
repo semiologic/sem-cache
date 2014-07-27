@@ -3,7 +3,7 @@
 Plugin Name: Semiologic Cache
 Plugin URI: http://www.semiologic.com/software/sem-cache/
 Description: An advanced caching module for WordPress.
-Version: 2.8.2
+Version: 2.8.3
 Author: Denis de Bernardy & Mike Koepke
 Author URI: http://www.getsemiologic.com
 Text Domain: sem-cache
@@ -360,7 +360,7 @@ class sem_cache {
 	 * @return string $rules
 	 */
 
-	function base_rewrite_rules($rules) {
+	static function base_rewrite_rules($rules) {
 		$cache_dir = WP_CONTENT_DIR . '/cache/static';
 		$cache_url = parse_url(WP_CONTENT_URL . '/cache/static');
 		$cache_url = $cache_url['path'];
@@ -434,7 +434,7 @@ EOS;
 	 * @return string $rules
 	 **/
 
-	function vary_header_rules() {
+	static function vary_header_rules() {
 		$encoding = get_site_option('blog_charset');
 		if ( !$encoding )
 			$encoding = 'utf-8';
@@ -488,7 +488,7 @@ EOS;
 	 * @return string $rules
 	 **/
 
-	function www_nonwww_rules() {
+	static function www_nonwww_rules() {
 
 		$site_url = get_option('siteurl');
 
@@ -537,7 +537,7 @@ EOS;
 	 * @return string $rules
 	 **/
 
-	function mod_header_rules() {
+	static function mod_header_rules() {
 
 	$extra = <<<EOS
 
@@ -592,7 +592,7 @@ EOS;
 	 * @return string $rules
 	 **/
 
-	function mod_deflate_rules() {
+	static function mod_deflate_rules() {
 		$extra = <<<EOS
 
 <IfModule mod_deflate.c>
