@@ -3,7 +3,7 @@ Contributors: Denis-de-Bernardy && Mike Koepke
 Donate link: http://www.semiologic.com/partners/
 Tags: semiologic
 Requires at least: 3.3
-Tested up to: 3.9
+Tested up to: 4.0
 Stable tag: trunk
 
 A high performance cache for WordPress.
@@ -64,6 +64,10 @@ The [Semiologic forum](http://forum.semiologic.com) is the best place to report 
 
 
 == Change Log ==
+
+= 2.9 =
+
+- WP 4.0 compat
 
 = 2.8.3 =
 
