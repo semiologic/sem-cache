@@ -3,9 +3,9 @@
 Plugin Name: Semiologic Cache
 Plugin URI: http://www.semiologic.com/software/sem-cache/
 Description: An advanced caching module for WordPress.
-Version: 2.9
+Version: 2.10
 Author: Denis de Bernardy & Mike Koepke
-Author URI: http://www.getsemiologic.com
+Author URI: https://www.semiologic.com
 Text Domain: sem-cache
 Domain Path: /lang
 License: Dual licensed under the MIT and GPLv2 licenses
@@ -496,7 +496,11 @@ EOS;
 		if ( strpos($site_url, 'localhost') !== false || strpos($site_url, '127.0.0.1') !== false)
 			return '';
 
-		$site_www = strpos($site_url, 'http://www.') !== false;
+		$protocol = 'http';
+		if ( is_ssl() )
+			$protocol = 'https';
+
+		$site_www = strpos($site_url, $protocol . '://www.') !== false;
 
 		$domain = self::url_to_domain($site_url);
 
@@ -509,7 +513,7 @@ EOS;
 
 <IfModule mod_rewrite.c>
 	RewriteCond %{HTTP_HOST} !^www\.$domain$ [NC]
-	RewriteRule ^(.*)$ http://www.$domain/$1 [R=301,L]
+	RewriteRule ^(.*)$ $protocol://www.$domain/$1 [R=301,L]
 </IfModule>
 
 EOS;
@@ -522,7 +526,7 @@ EOS;
 
  <IfModule mod_rewrite.c>
     RewriteCond %{HTTP_HOST} ^www\.$domain [NC]
-    RewriteRule ^(.*)$ http://$domain/$1 [L,R=301]
+    RewriteRule ^(.*)$ $protocol://$domain/$1 [L,R=301]
 </IfModule>
 
 EOS;
