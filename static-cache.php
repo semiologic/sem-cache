@@ -14,8 +14,9 @@ foreach ( array(
 		define($const, false);
 }
 
+// set for every 24 hours
 if ( !defined('cache_timeout') )
-	define('cache_timeout', 43200);
+	define('cache_timeout', 86400);
 
 if ( !defined('DONOTCACHEPAGE') )
 	define( 'DONOTCACHEPAGE', false );
@@ -293,8 +294,8 @@ class static_cache {
 		}
 
 		#don't cache a contact form page due to spam prevention techniques
-		if ( preg_match("/(\bsem_contact_form\b)/i",$buffer) )
-				return $buffer;
+//		if ( preg_match("/(\bsem_contact_form\b)/i",$buffer) )
+//				return $buffer;
 
 		#don't cache a page due if a sem_no_cache flag is found.  Provide manual way to exclude a page
 		if ( preg_match("/(\bsem_do_not_cache\b)/i",$buffer) )

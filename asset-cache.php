@@ -287,6 +287,25 @@ class asset_cache {
 
 		//		$wp_scripts->reset();
 	}
+
+	/**
+	 * make_script_async()
+	 *
+	 * @param $tag
+	 * @param $handle
+	 * @param $src
+	 *
+	 * @return string
+	 */
+	static function make_script_async( $tag, $handle, $src ) {
+
+//		if ( 'footer_scripts_concat' != $handle ) {
+//	        return $tag;
+//	    }
+
+		return str_replace( ' src', ' async="async" src', $tag );
+	}
+
 	/**
 	 * concat_scripts()
 	 *
@@ -394,6 +413,7 @@ class asset_cache {
 if ( !SCRIPT_DEBUG ) {
 	add_filter('wp_print_scripts', array('asset_cache', 'wp_print_scripts'), 1000000);
 	add_filter('wp_print_footer_scripts', array('asset_cache', 'wp_print_footer_scripts'), 9);
+	add_filter('script_loader_tag', array('asset_cache', 'make_script_async'), 10 , 3);
 }
 
 if ( !sem_css_debug ) {

@@ -3,7 +3,7 @@
 Plugin Name: Semiologic Cache
 Plugin URI: http://www.semiologic.com/software/sem-cache/
 Description: An advanced caching module for WordPress.
-Version: 2.10
+Version: 2.11
 Author: Denis de Bernardy & Mike Koepke
 Author URI: https://www.semiologic.com
 Text Domain: sem-cache
@@ -456,25 +456,8 @@ AddDefaultCharset $encoding
 
 # Force UTF-8 for certain file formats.
 <IfModule mod_mime.c>
-    AddCharset utf-8 .atom .css .js .json .jsonld .rss .vtt .webapp .xml
+    AddCharset utf-8 .atom .css .js .json .jsonld .rdf .rss .vtt .webapp .webmanifest .xml
 </IfModule>
-
-<IfModule mod_headers.c>
-    # Make sure proxies don't deliver the wrong content
-    Header append Vary User-Agent $env_dont_vary
-    Header append Vary Cookie $env_dont_vary
-</IfModule>
-
-# ----------------------------------------------------------------------
-# Instructs the proxies to cache two versions of the resource: one compressed, and one uncompressed.
-# https://developers.google.com/speed/docs/best-practices/caching#LeverageProxyCaching
-# ----------------------------------------------------------------------
-<IfModule mod_headers.c>
-  <FilesMatch "\.(js|css|xml|gz)$">
-    Header append Vary: Accept-Encoding
-  </FilesMatch>
-</IfModule>
-
 
 EOS;
 
@@ -545,38 +528,6 @@ EOS;
 
 	$extra = <<<EOS
 
-
-# ------------------------------------------------------------------------------
-# | Better website experience                                                  |
-# ------------------------------------------------------------------------------
-
-# Force IE to render pages in the highest available mode in the various
-# cases when it may not: http://hsivonen.iki.fi/doctype/ie-mode.pdf.
-
-<IfModule mod_headers.c>
-    Header set X-UA-Compatible "IE=edge"
-    # `mod_headers` can't match based on the content-type, however, we only
-    # want to send this header for HTML pages and not for the other resources
-    <FilesMatch "\.(appcache|atom|crx|css|cur|eot|f4[abpv]|flv|gif|htc|ico|jpe?g|js|json(ld)?|m4[av]|manifest|map|mp4|oex|og[agv]|opus|otf|pdf|png|rdf|rss|safariextz|svgz?|swf|tt[cf]|vcf|vtt|webapp|web[mp]|woff|xml|xpi)$">
-        Header unset X-UA-Compatible
-    </FilesMatch>
-</IfModule>
-
-
-<IfModule mod_headers.c>
-	# No caching for dynamic files
-	<filesMatch "\.(php|cgi|pl|html|htm|xml)$">
-		Header set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
-		Header set Pragma "no-cache"
-	</filesMatch>
-
-	# 1 MONTH
-	<filesMatch "\.(jpg|jpeg|png|gif|swf|ico|js|css|pdf|flv|txt)$">
-		Header set Cache-Control "max-age=2419200, must-revalidate"
-	</filesMatch>
-
-</IfModule>
-
 # Prevent mobile network providers from modifying the website's content.
 # http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9.5.
 
@@ -615,31 +566,45 @@ EOS;
     #  and can remove the `<IfModule mod_filter.c>` and `</IfModule>` lines
     #  as `AddOutputFilterByType` is still in the core directives).
     <IfModule mod_filter.c>
-        AddOutputFilterByType DEFLATE application/atom+xml \
-                                      application/javascript \
-                                      application/json \
-                                      application/ld+json \
-                                      application/rss+xml \
-                                      application/vnd.ms-fontobject \
-                                      application/x-font-ttf \
-                                      application/x-web-app-manifest+json \
-                                      application/xhtml+xml \
-                                      application/xml \
-                                      font/opentype \
-                                      image/svg+xml \
-                                      image/x-icon \
-                                      text/css \
-                                      text/html \
-                                      text/plain \
-                                      text/richtext \
-                                      text/x-component \
-                                      text/xml
+        AddOutputFilterByType DEFLATE "application/atom+xml" \
+                                      "application/javascript" \
+                                      "application/json" \
+                                      "application/ld+json" \
+                                      "application/manifest+json" \
+                                      "application/rdf+xml" \
+                                      "application/rss+xml" \
+                                      "application/schema+json" \
+                                      "application/vnd.geo+json" \
+                                      "application/vnd.ms-fontobject" \
+                                      "application/x-font-ttf" \
+                                      "application/x-javascript" \
+                                      "application/x-web-app-manifest+json" \
+                                      "application/xhtml+xml" \
+                                      "application/xml" \
+                                      "font/eot" \
+                                      "font/opentype" \
+                                      "image/bmp" \
+                                      "image/svg+xml" \
+                                      "image/vnd.microsoft.icon" \
+                                      "image/x-icon" \
+                                      "text/cache-manifest" \
+                                      "text/css" \
+                                      "text/html" \
+                                      "text/javascript" \
+                                      "text/plain" \
+                                      "text/vcard" \
+                                      "text/vnd.rim.location.xloc" \
+                                      "text/vtt" \
+                                      "text/x-component" \
+                                      "text/x-cross-domain-policy" \
+                                      "text/xml"
+
 
 		# Don't compress binaries
 		SetEnvIfNoCase Request_URI .(?:exe|t?gz|zip|iso|tar|bz2|sit|rar) no-gzip dont-vary
 
 		# Don't compress images
-		SetEnvIfNoCase Request_URI .(?:gif|jpe?g|jpg|ico|png)  no-gzip dont-vary
+		#SetEnvIfNoCase Request_URI .(?:gif|jpe?g|jpg|ico|png)  no-gzip dont-vary
 
 		# Don't compress PDFs
 		SetEnvIfNoCase Request_URI .pdf no-gzip dont-vary
@@ -647,14 +612,11 @@ EOS;
 		# Don't compress flash files (only relevant if you host your own videos)
 		SetEnvIfNoCase Request_URI .(?:flv|swf) no-gzip dont-vary
 
-		# Drop problematic browsers
-		BrowserMatch ^Mozilla/4 gzip-only-text/html
-		BrowserMatch ^Mozilla/4\.0[678] no-gzip
-		BrowserMatch \bMSIE !no-gzip !gzip-only-text/html
-		BrowserMatch \bMSI[E] !no-gzip !gzip-only-text/html
-		# Opera occasionally pretends to be IE with "Mozilla/4.0"
-		BrowserMatch \bOpera !no-gzip
 	</IfModule>
+
+    <IfModule mod_mime.c>
+        AddEncoding gzip              svgz
+    </IfModule>
 
 
 EOS;
@@ -673,14 +635,24 @@ EOS;
 
 <IfModule mod_mime.c>
 
-  # Audio
-    AddType audio/mp4                                   m4a f4a f4b
-    AddType audio/ogg                                   oga ogg opus
-	AddType audio/wav                                   wav
-	AddType audio/wma                                   wma
-	AddType audio/x-realaudio                           ra ram
-	AddType audio/midi                                  mid midi
-	AddType audio/mpeg                                  mp3 m4a
+  # Data interchange
+    AddType application/atom+xml                        atom
+    AddType application/json                            json map topojson
+    AddType application/ld+json                         jsonld
+    AddType application/rss+xml                         rss
+    AddType application/vnd.geo+json                    geojson
+    AddType application/xml                             rdf xml
+
+  # JavaScript
+    # Normalize to standard type.
+    # https://tools.ietf.org/html/rfc4329#section-7.2
+
+    AddType application/javascript                      js
+
+  # Manifest files
+    AddType application/manifest+json                   webmanifest
+    AddType application/x-web-app-manifest+json         webapp
+    AddType text/cache-manifest                         appcache
 
   # Images
   	AddType image/bmp                                   bmp
@@ -689,57 +661,54 @@ EOS;
 	AddType image/tiff                                  tif tiff
 	AddType image/png                                   png
 
-  # Data interchange
-    AddType application/json                            json map
-    AddType application/ld+json                         jsonld
-
-  # JavaScript
-    # Normalize to standard type.
-    # http://tools.ietf.org/html/rfc4329#section-7.2
-    AddType application/javascript                      js
-
-  # Video
-    AddType video/mp4                                   mp4 m4v f4v f4p
+  # Media files
+    AddType audio/mp4                                   f4a f4b m4a
+    AddType audio/ogg                                   oga ogg opus
+    AddType image/bmp                                   bmp
+    AddType image/svg+xml                               svg svgz
+    AddType image/webp                                  webp
+    AddType video/mp4                                   f4v f4p m4v mp4
     AddType video/ogg                                   ogv
     AddType video/webm                                  webm
     AddType video/x-flv                                 flv
-	AddType video/asf                                   asf asx wax wmv wmx
-	AddType video/avi                                   avi
-	AddType video/divx                                  divx
-	AddType video/quicktime                             mov qt
-	AddType video/mpeg                                  mpeg mpg mpe
+
+    # Serving `.ico` image files with a different media type
+    # prevents Internet Explorer from displaying them as images:
+    # https://github.com/h5bp/html5-boilerplate/commit/37b5fec090d00f38de64b591bcddcb205aadf8ee
+
+    AddType image/x-icon                                cur ico
+
 
   # Web fonts
     AddType application/font-woff                       woff
+    AddType application/font-woff2                      woff2
     AddType application/vnd.ms-fontobject               eot
 
-    # Browsers usually ignore the font MIME types and sniff the content,
-    # however, Chrome shows a warning if other MIME types are used for the
-    # following fonts.
+    # Browsers usually ignore the font media types and simply sniff
+    # the bytes to figure out the font type.
+    # https://mimesniff.spec.whatwg.org/#matching-a-font-type-pattern
+    #
+    # However, Blink and WebKit based browsers will show a warning
+    # in the console if the following font types are served with any
+    # other media types.
+
     AddType application/x-font-ttf                      ttc ttf
     AddType font/opentype                               otf
 
-    # Make SVGZ fonts work on iPad:
-    # https://twitter.com/FontSquirrel/status/14855840545
-    AddType     image/svg+xml                           svg svgz
-    AddEncoding gzip                                    svgz
-
   # Other
     AddType application/octet-stream                    safariextz
+    AddType application/x-bb-appworld                   bbaw
     AddType application/x-chrome-extension              crx
     AddType application/x-opera-extension               oex
-    AddType application/x-shockwave-flash               swf
-    AddType application/x-web-app-manifest+json         webapp
     AddType application/x-xpinstall                     xpi
-    AddType application/xml                             atom rdf rss xml
-    AddType image/webp                                  webp
-    AddType image/x-icon                                ico cur
-    AddType text/cache-manifest                         appcache manifest
+    AddType text/vcard                                  vcard vcf
+    AddType text/vnd.rim.location.xloc                  xloc
     AddType text/vtt                                    vtt
     AddType text/x-component                            htc
-    AddType text/x-vcard                                vcf
+    AddType application/xml                             atom rdf rss xml
 	AddType text/plain                                  txt
 	AddType text/richtext                               rtf rtx
+    AddType application/x-shockwave-flash               swf
 
   # Compressed Files
 	AddType application/x-tar                           tar
@@ -776,11 +745,11 @@ EOS;
 # be removed: http://developer.yahoo.com/performance/rules.html#etags.
 
 # `FileETag None` is not enough for every server.
-<IfModule mod_headers.c>
-    Header unset ETag
-</IfModule>
+#<IfModule mod_headers.c>
+#    Header unset ETag
+#</IfModule>
 
-FileETag None
+#FileETag None
 
 <IfModule mod_expires.c>
 
@@ -791,62 +760,65 @@ FileETag None
     ExpiresByType text/css                              "access plus 1 year"
 
   # Data interchange
+    ExpiresByType application/atom+xml                  "access plus 1 hour"
+    ExpiresByType application/rdf+xml                   "access plus 1 hour"
+    ExpiresByType application/rss+xml                   "access plus 1 hour"
+
     ExpiresByType application/json                      "access plus 0 seconds"
     ExpiresByType application/ld+json                   "access plus 0 seconds"
+    ExpiresByType application/schema+json               "access plus 0 seconds"
+    ExpiresByType application/vnd.geo+json              "access plus 0 seconds"
     ExpiresByType application/xml                       "access plus 0 seconds"
     ExpiresByType text/xml                              "access plus 0 seconds"
-    ExpiresByType text/xsd                              "access plus 1 month"
-    ExpiresByType text/xsl                              "access plus 1 month"
 
   # Favicon (cannot be renamed!) and cursor images
-    ExpiresByType image/x-icon                          "access plus 1 month"
-
-  # HTML components (HTCs)
-    ExpiresByType text/x-component                      "access plus 1 month"
+    ExpiresByType image/vnd.microsoft.icon              "access plus 1 week"
+    ExpiresByType image/x-icon                          "access plus 1 week"
 
   # HTML
     ExpiresByType text/html                             "access plus 0 seconds"
 
   # JavaScript
     ExpiresByType application/javascript                "access plus 1 year"
+    ExpiresByType application/x-javascript              "access plus 1 year"
+    ExpiresByType text/javascript                       "access plus 1 year"
 
   # Manifest files
+    ExpiresByType application/manifest+json             "access plus 1 week"
     ExpiresByType application/x-web-app-manifest+json   "access plus 0 seconds"
     ExpiresByType text/cache-manifest                   "access plus 0 seconds"
 
   # Media
     ExpiresByType audio/ogg                             "access plus 1 month"
-    ExpiresByType audio/x-realaudio                     "access plus 1 month"
-    ExpiresByType audio/wav                             "access plus 1 month"
-    ExpiresByType audio/wma                             "access plus 1 month"
-    ExpiresByType audio/ogg                             "access plus 1 month"
-    ExpiresByType audio/midi                            "access plus 1 month"
-    ExpiresByType audio/mpeg                            "access plus 1 month"
+    ExpiresByType image/bmp                             "access plus 1 month"
     ExpiresByType image/gif                             "access plus 1 month"
     ExpiresByType image/jpeg                            "access plus 1 month"
     ExpiresByType image/png                             "access plus 1 month"
-    ExpiresByType image/tiff                            "access plus 1 month"
-    ExpiresByType image/bmp                             "access plus 1 month"
+    ExpiresByType image/svg+xml                         "access plus 1 month"
+    ExpiresByType image/webp                            "access plus 1 month"
     ExpiresByType video/mp4                             "access plus 1 month"
     ExpiresByType video/ogg                             "access plus 1 month"
     ExpiresByType video/webm                            "access plus 1 month"
-    ExpiresByType video/asf                             "access plus 1 month"
-    ExpiresByType video/avi                             "access plus 1 month"
-    ExpiresByType video/divx                            "access plus 1 month"
-    ExpiresByType video/quicktime                       "access plus 1 month"
-    ExpiresByType video/mpeg                            "access plus 1 month"
-    ExpiresByType video/x-flv                           "access plus 1 month"
 
-  # Web feeds
-    ExpiresByType application/atom+xml                  "access plus 1 hour"
-    ExpiresByType application/rss+xml                   "access plus 1 hour"
 
   # Web fonts
-    ExpiresByType application/font-woff                 "access plus 1 month"
+    # Embedded OpenType (EOT)
     ExpiresByType application/vnd.ms-fontobject         "access plus 1 month"
-    ExpiresByType application/x-font-ttf                "access plus 1 month"
+    ExpiresByType font/eot                              "access plus 1 month"
+
+    # OpenType
     ExpiresByType font/opentype                         "access plus 1 month"
-    ExpiresByType image/svg+xml                         "access plus 1 month"
+
+    # TrueType
+    ExpiresByType application/x-font-ttf                "access plus 1 month"
+
+    # Web Open Font Format (WOFF) 1.0
+    ExpiresByType application/font-woff                 "access plus 1 month"
+    ExpiresByType application/x-font-woff               "access plus 1 month"
+    ExpiresByType font/woff                             "access plus 1 month"
+
+    # Web Open Font Format (WOFF) 2.0
+    ExpiresByType application/font-woff2                "access plus 1 month"
 
   # Application files
     ExpiresByType application/msword                    "access plus 1 month"
@@ -866,6 +838,9 @@ FileETag None
     ExpiresByType application/x-tar                     "access plus 1 month"
     ExpiresByType application/zip                       "access plus 1 month"
     ExpiresByType application/x-gzip                    "access plus 1 month"
+
+  # Other
+    ExpiresByType text/x-cross-domain-policy            "access plus 1 week"
 
 </IfModule>
 
@@ -1478,7 +1453,8 @@ EOS;
 		return $in;
 	} # flush_cache()
 
-	function url_to_domain($url)
+
+	static function url_to_domain($url)
 	{
 	    $host = @parse_url($url, PHP_URL_HOST);
 

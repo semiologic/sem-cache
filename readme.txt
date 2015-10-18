@@ -65,6 +65,17 @@ The [Semiologic Support Page](https://www.semiologic.com/support/) is the best p
 
 == Change Log ==
 
+= 2.11 =
+
+- New: async attribute added to javascript includes
+- Change: Updated htaccess ruleset to improve caching for new asset types
+- Fix: Htaccess access rules caused lack of caching of css and javascripts files with querystring parameters
+- Change: Static pages are now held 24 hours
+- Change: Pages with semiologic contact form are cached again (back out prior disabling)
+- Change: Clarify which php memcached library is supported in Admin screen
+- Fix: url_to_domain php static warning corrected
+
+
 = 2.10 =
 
 - Set the www to non-www/non-www to www using https, if applicable

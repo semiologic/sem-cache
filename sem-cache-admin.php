@@ -213,7 +213,7 @@ class sem_cache_admin {
 		$gzip_notice = array();
 		
 		if ( !self::can_memcached() ) {
-			$error = sprintf(__('<a href="%1$s">Memcache</a> is not installed on your server, or the php extension is misconfigured, or the daemon is not running. Note that shared hosts never offer memcache; you need a dedicated server or a VPS to take advantage of it. Also note that there are two PHP extensions, and that only <a href="%1$s">this one</a> is supported.', 'sem-cache'), 'http://www.php.net/manual/en/book.memcache.php');
+			$error = sprintf(__('<a href="%1$s">Memcache</a> is not installed on your server, or the php extension is misconfigured, or the daemon is not running. Note that shared hosts never offer memcache; you need a dedicated server or a VPS to take advantage of it. Also note that there are two PHP extensions, and that only <a href="%1$s">this one</a> (Memcache not Memcached) is supported.', 'sem-cache'), 'http://www.php.net/manual/en/book.memcache.php');
 			$memory_errors[] = $error;
 			$query_errors[] = $error;
 			$object_errors[] = $error;
@@ -370,10 +370,10 @@ class sem_cache_admin {
 			. '</label>'
 			. '</p>' . "\n"
 			. '<p>'
-			. __('The static cache will attempt to serve previously rendered version of the requested web pages to visitors who aren\'t logged in. The key drawback is that your visitors are not always viewing the latest version of your web pages. Lists of recent posts and recent comments, for instance, may take up to 12 hours to refresh across your site. In addition, it prevents any random elements that are introduced at the php level from working.', 'sem-cache')
+			. __('The static cache will attempt to serve previously rendered version of the requested web pages to visitors who aren\'t logged in. The key drawback is that your visitors are not always viewing the latest version of your web pages. Lists of recent posts and recent comments, for instance, may take up to  hours to refresh across your site. In addition, it prevents any random elements that are introduced at the php level from working.', 'sem-cache')
 			. '</p>' . "\n"
 			. '<p>'
-			. __('Key web pages on your site will get refreshed when you edit your posts and pages, so as to ensure they\'re reasonably fresh. Newly approved comments will trigger throttled refreshes of an even smaller subset of web pages. Statically cached web pages expire after 12 hours.', 'sem-cache')
+			. __('Key web pages on your site will get refreshed when you edit your posts and pages, so as to ensure they\'re reasonably fresh. Newly approved comments will trigger throttled refreshes of an even smaller subset of web pages. Statically cached web pages expire after 24 hours.', 'sem-cache')
 			. '</p>' . "\n"
 			. '<p>'
 			. __('The benefit of the filesystem-based static cache is that your site\'s key web pages, such as the site\'s front page or individual posts, will be served without even loading PHP. This allows for maximum scalability if your site is getting hammered by excrutiating traffic.', 'sem-cache')
@@ -415,7 +415,7 @@ class sem_cache_admin {
 			. __('The query cache primarily benefits commentors and users who are logged in; in particular yourself. These users cannot benefit from a static cache, because each of web page on your site potentially contains data that is specific to them; but they fully benefit from a query cache.', 'sem-cache')
 			. '</p>' . "\n"
 			. '<p>'
-			. __('The query cache\'s refresh policy is similar to that of the memory-based static cache: key queries are flushed whenever you edit posts or pages, or approve new comments. All of the remaining queries expire after 12 hours.', 'sem-cache')
+			. __('The query cache\'s refresh policy is similar to that of the memory-based static cache: key queries are flushed whenever you edit posts or pages, or approve new comments. All of the remaining queries expire after 24 hours.', 'sem-cache')
 			. '</p>' . "\n"
 			. $query_errors
 			. '</td>' . "\n"
