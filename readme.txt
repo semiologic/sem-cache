@@ -65,6 +65,10 @@ The [Semiologic Support Page](https://www.semiologic.com/support/) is the best p
 
 == Change Log ==
 
+= 2.12 =
+
+- Remove async inclusion to resolve inline jquery call comflict from 3rd party plugins
+
 = 2.11 =
 
 - New: async attribute added to javascript includes

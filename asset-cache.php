@@ -413,7 +413,7 @@ class asset_cache {
 if ( !SCRIPT_DEBUG ) {
 	add_filter('wp_print_scripts', array('asset_cache', 'wp_print_scripts'), 1000000);
 	add_filter('wp_print_footer_scripts', array('asset_cache', 'wp_print_footer_scripts'), 9);
-	add_filter('script_loader_tag', array('asset_cache', 'make_script_async'), 10 , 3);
+//	add_filter('script_loader_tag', array('asset_cache', 'make_script_async'), 10 , 3);
 }
 
 if ( !sem_css_debug ) {
