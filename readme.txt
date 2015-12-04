@@ -65,9 +65,13 @@ The [Semiologic Support Page](https://www.semiologic.com/support/) is the best p
 
 == Change Log ==
 
+= 2.13 =
+
+- Static and asset cache timeouts may not be aligned correctly.   
+
 = 2.12 =
 
-- Remove async inclusion to resolve inline jquery call comflict from 3rd party plugins
+- Remove async inclusion to resolve inline jquery call conflict from 3rd party plugins
 
 = 2.11 =
 
