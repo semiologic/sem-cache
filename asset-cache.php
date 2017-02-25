@@ -13,66 +13,80 @@ class asset_cache {
 	 **/
 
 	static function wp_print_styles() {
-		static $done = false;
-		if ( $done )
+		static $styles_done = false;
+		if ( $styles_done )
 			return;
-		
-		$done = true;
+
+        $styles_done = true;
+        asset_cache::process_styles( true );
+	} # wp_print_styles()
 
 
-		global $wp_styles;
+    /**
+     * process_styles()
+     *
+     * @return void
+     **/
 
-		if ( !( $wp_styles instanceof WP_Styles ) )
-			$wp_styles = new WP_Styles;
+    static function process_styles() {
 
-		$queue = $wp_styles->queue;
+        global $wp_styles;
+
+        if ( !( $wp_styles instanceof WP_Styles ) )
+            $wp_styles = new WP_Styles;
+
+        $queue = $wp_styles->queue;
         $wp_styles->all_deps($queue);
 
-		if ( !$wp_styles->to_do )
-			return;
+        if ( !$wp_styles->to_do )
+            return;
 
-		$todo = array();
-		$css = array();
-		$dirs =  array( content_url(), plugins_url(), includes_url() );
+        $todo = array();
+        $css = array();
+        $dirs =  array( content_url(), plugins_url(), includes_url() );
 
-		foreach ( $wp_styles->to_do as $key => $handle ) {
+        foreach ( $wp_styles->to_do as $key => $handle ) {
 
-			$cssPath = $wp_styles->registered[$handle]->src;
+            // if it is conditionally loaded let's ignore those
+            if (isset($wp_styles->registered[$handle]->extra["conditional"]))
+                continue;
 
-			if (  !asset_cache::startsWith(  $cssPath,  site_url() ) )
-				$cssPath = site_url() . $cssPath;
+            $cssPath = $wp_styles->registered[$handle]->src;
 
-			$inDir = false;
-			foreach ( $dirs as $dir ) {
-				if (asset_cache::startsWith( $cssPath, $dir ) ) {
-					$inDir = true;
-					break;
-				}
-			}
+            if (  !asset_cache::startsWith(  $cssPath,  site_url() ) )
+                $cssPath = site_url() . $cssPath;
 
-			$suffixMatch = asset_cache::endsWith( $cssPath, ".css" );
+            $inDir = false;
+            foreach ( $dirs as $dir ) {
+                if (asset_cache::startsWith( $cssPath, $dir ) ) {
+                    $inDir = true;
+                    break;
+                }
+            }
 
-			if ( $inDir && $suffixMatch ) {
-				$css[$handle] = $wp_styles->registered[$handle]->ver;
-				$todo[] = $handle;
-				unset( $wp_styles->to_do[$key]);
-				$wp_styles->done[] = $handle;
-			}
-		}
+            $suffixMatch = asset_cache::endsWith( $cssPath, ".css" );
 
-		if ( $todo ) {
-			$file = '/assets/' . md5(serialize($css)) . '.css';
-			if ( !cache_fs::exists($file) )
-				asset_cache::concat_styles($file, $todo);
-			$wp_styles->default_version = null;
-			wp_enqueue_style('styles_concat', content_url() . '/cache' . $file);
-		}
+            if ( $inDir && $suffixMatch ) {
+                $css[$handle] = $wp_styles->registered[$handle]->ver;
+                $todo[] = $handle;
+                unset( $wp_styles->to_do[$key]);
+                $wp_styles->done[] = $handle;
+            }
+        }
+
+        if ( $todo ) {
+            $file = '/assets/' . md5(serialize($css)) . '.css';
+            if ( !cache_fs::exists($file) )
+                asset_cache::concat_styles($file, $todo);
+            $wp_styles->default_version = null;
+            wp_enqueue_style('styles_concat', content_url() . '/cache' . $file);
+        }
 
 //		$wp_styles->do_concat = true;
 //		$wp_styles->do_items();
-	} # wp_print_styles()
-	
-	
+    } # process_styles()
+
+
 	/**
 	 * concat_styles()
 	 *
@@ -176,11 +190,11 @@ class asset_cache {
 	 **/
 
 	static function wp_print_scripts() {
-		static $done = false;
-		if ( $done )
+		static $scripts_done = false;
+		if ( $scripts_done )
 			return;
 
-		$done = true;
+        $scripts_done = true;
 		asset_cache::process_scripts( true );
 	} # wp_print_scripts()
 	
@@ -192,11 +206,11 @@ class asset_cache {
 	 **/
 
 	static function wp_print_footer_scripts() {
-		static $done = false;
-		if ( $done )
+		static $footer_scripts_done = false;
+		if ( $footer_scripts_done )
 			return;
-		
-		$done = true;
+
+        $footer_scripts_done = true;
 
 		asset_cache::process_scripts( false );
 	} # wp_print_footer_scripts()
@@ -222,7 +236,17 @@ class asset_cache {
 
 		$todo = array();
 		$js = array();
-		$dirs =  array( content_url(), plugins_url() );
+		$dirs =  array( content_url(), plugins_url(), site_url () . '/wp-includes/js' );
+
+		// we need to put the header scripts first though
+		if ( !$header_scripts ) {
+			$header_scripts_key = array_search( 'scripts-concat', $wp_scripts->to_do );
+			if ( $header_scripts_key !== FALSE ) {
+				$header_concat = $wp_scripts->to_do[$header_scripts_key];
+				unset( $wp_scripts->to_do[$header_scripts_key] );
+				$wp_scripts->to_do = array( 0 => $header_concat ) + $wp_scripts->to_do;
+			}
+		}
 
 		foreach ( $wp_scripts->to_do as $key => $handle ) {
 			if ( !empty($wp_scripts->registered[$handle]->args) )
@@ -230,6 +254,16 @@ class asset_cache {
 
 			// bail if is a footer script and we're doing headers
 			if ( $header_scripts && $wp_scripts->groups[$handle] > 0 )
+				continue;
+
+			// if it is conditionally loaded let's ignore those
+            if (isset($wp_scripts->registered[$handle]->extra["conditional"]))
+                continue;
+
+			if ( $handle == 'contact-form-7')
+				continue;
+
+			if ( ( $handle == 'gpr_reviews_readmore') || ( $handle == 'gpr_reviews_main_scripts') )
 				continue;
 
 			$jsPath = $wp_scripts->registered[$handle]->src;
@@ -264,14 +298,22 @@ class asset_cache {
 			$file = '/assets/' . md5(serialize($js)) . '.js';
 			if ( !cache_fs::exists($file) )
 				asset_cache::concat_scripts($file, $todo);
-			$wp_scripts->default_version = null;
+
+            $extra = asset_cache::concat_extra( $todo );
+
+            $wp_scripts->default_version = null;
 			if ( $header_scripts ) {
-				wp_enqueue_script('scripts_concat', content_url() . '/cache' . $file);
+				wp_enqueue_script('scripts-concat', content_url() . '/cache' . $file );
+//				wp_enqueue_script( 'scripts-concat', content_url() . '/cache' . $file, array(), false, true );
+                if ( $extra )
+                    $wp_scripts->registered['scripts-concat']->add_data( 'data', $extra );
 			}
 			else {
-				wp_enqueue_script('footer_scripts_concat', content_url() . '/cache' . $file, array(), false, true);
-				$wp_scripts->groups['footer_scripts_concat'] = 1;
-				$wp_scripts->in_footer[] = 'footer_scripts_concat';
+				wp_enqueue_script('footer-scripts-concat', content_url() . '/cache' . $file, array('scripts-concat'), false, true);
+				$wp_scripts->groups['footer-scripts-concat'] = 1;
+				$wp_scripts->in_footer[] = 'footer-scripts-concat';
+                if ( $extra )
+                    $wp_scripts->registered['footer-scripts-concat']->add_data( 'data', $extra );
 			}
 		}
 
@@ -297,13 +339,13 @@ class asset_cache {
 	 *
 	 * @return string
 	 */
-	static function make_script_async( $tag, $handle, $src ) {
+	static function make_script_defer( $tag, $handle, $src ) {
 
 //		if ( 'footer_scripts_concat' != $handle ) {
 //	        return $tag;
 //	    }
 
-		return str_replace( ' src', ' async="async" src', $tag );
+		return str_replace( ' src', ' defer" src', $tag );
 	}
 
 	/**
@@ -381,6 +423,27 @@ class asset_cache {
 		return $str;
 	} # strip_bom()
 
+    /**
+     * concat_extra()
+     *
+     * @param array $handles
+     *
+     * @return string
+     **/
+
+    static function concat_extra( $handles ) {
+        global $wp_scripts;
+        $extra = '';
+
+        foreach ( $handles as $handle ) {
+            if ( isset( $wp_scripts->registered[$handle]->extra['data'] ) )
+                $extra .= $wp_scripts->registered[$handle]->extra['data'];
+        }
+
+        return $extra;
+
+    } # concat_scripts()
+
 	/**
 	 * startsWith()
 	 *
@@ -413,7 +476,7 @@ class asset_cache {
 if ( !SCRIPT_DEBUG ) {
 	add_filter('wp_print_scripts', array('asset_cache', 'wp_print_scripts'), 1000000);
 	add_filter('wp_print_footer_scripts', array('asset_cache', 'wp_print_footer_scripts'), 9);
-//	add_filter('script_loader_tag', array('asset_cache', 'make_script_async'), 10 , 3);
+//	add_filter('script_loader_tag', array('asset_cache', 'make_script_defer'), 10 , 3);
 }
 
 if ( !sem_css_debug ) {

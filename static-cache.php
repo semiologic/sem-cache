@@ -175,6 +175,7 @@ class static_cache {
 		
 		case 'sitemap.xml':
 		case 'sitemap.xml.gz':
+		case 'sitemap_index.xml':
 			# let xml sitemap plugins cache themselves
 			return;
 		}
@@ -192,19 +193,7 @@ class static_cache {
 			|| self::$nocache
 			)
 			return;
-		
-		global $sem_mobile_agents;
-		$mobile_agents = $sem_mobile_agents;
-//		$mobile_agents = array_map('preg_quote', (array) $mobile_agents);
-		$mobile_agents = implode("|", $mobile_agents);
-		if ( preg_match("{($mobile_agents)}i", $_SERVER['HTTP_USER_AGENT']) )
-			return;
-		if ( preg_match("/(?=.*?\bandroid\b)(?=.*?\bmobile\b).*$/i", $_SERVER['HTTP_USER_AGENT']) )
-			return;                	
-		#header("Content-Type: text/plain");
-		#var_dump($_SERVER);
-		#die;
-		
+
 		# kill static cache on multisite installs
 		self::$static &= !( function_exists('is_multisite') && is_multisite() );
 		
@@ -313,17 +302,22 @@ class static_cache {
 		
 		# sanity check on the base folder
 		$host = get_option('home');
-		if ( preg_match("|^([^/]+://[^/]+)/|", $host, $_host) )
-			$host = end($_host);
-		if ( $host != self::$host )
-			return $buffer;
-		
+		// check if we're on a dev site
+		if( strpos( $host, 'localhost') === false ) {
+			if ( preg_match( "|^([^/]+://[^/]+)/|", $host, $_host ) ) {
+				$host = end( $_host );
+			}
+			if ( $host != self::$host ) {
+				return $buffer;
+			}
+		}
+
 		# sanity check on incomplete files
 		if ( !in_array(self::$status_code, array(301, 302)) && !preg_match("/(?:<\/html>|<\/rss>|<\/feed>)/i",$buffer) )
 			return $buffer;
 		
 		# sanity check on mobile users
-		global $sem_mobile_agents;
+/*		global $sem_mobile_agents;
 		if ( $sem_mobile_agents != sem_cache::get_mobile_agents() )
 			return $buffer;
 		$mobile_agents = $sem_mobile_agents;
@@ -333,7 +327,7 @@ class static_cache {
 			return $buffer;
 		if ( preg_match("/(?=.*?\bandroid\b)(?=.*?\bmobile\b).*$/i", $_SERVER['HTTP_USER_AGENT']) )
 			return $buffer;  
-
+*/
 		// made it through all the checks.  Let's minify the html now
 //		$buffer = self::minify_html( $buffer );
 

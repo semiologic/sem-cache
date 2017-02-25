@@ -67,7 +67,7 @@ The [Semiologic Support Page](https://www.semiologic.com/support/) is the best p
 
 = 2.13 =
 
-- Static and asset cache timeouts may not be aligned correctly.   
+- Static and asset cache timeouts may not be aligned correctly.
 
 = 2.12 =
 

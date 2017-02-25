@@ -221,7 +221,7 @@ class cache_fs {
 				return array($total_pages, $expired_pages);
 
 			while ( ( $file = readdir($handle) ) !== false ) {
-				if ( in_array($file, array('.', '..')) )
+				if ( in_array($file, array('.', '..', '.DS_Store')) )
 					continue;
 				self::stats("$dir/$file", $timeout, $bucket);
 			}
