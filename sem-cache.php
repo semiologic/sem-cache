@@ -515,13 +515,15 @@ class sem_cache {
 		$cache_id = md5($link);
 		
 		wp_cache_delete($cache_id, 'url2post_id');
-		
+
+        $timeout = !is_admin() && current_filter() == 'wp_update_comment_count' ? 300 : false;
+
 		if ( static_cache ) {
 			static $permalink_structure;
 			if ( !isset($permalink_structure) )
 				$permalink_structure = get_option('permalink_structure');
 			# 5 min throttling in case the site is getting hammered by comments
-			$timeout = !is_admin() && current_filter() == 'wp_update_comment_count' ? 300 : false;
+
 			if ( $permalink_structure ) {
 				$path = trim(preg_replace("|^[^/]+://[^/]+|", '', $link), '/');
 				cache_fs::flush('/static/' . $path, $timeout, false);

@@ -98,7 +98,7 @@ class asset_cache {
 	static function concat_styles($file, $handles) {
 		global $wp_styles;
 		$css = array();
-		
+
 		foreach ( $handles as $handle ) {
 			$src = $wp_styles->registered[$handle]->src;
 			if ( substr($src, 0, 1) == '/' ) {
@@ -114,13 +114,13 @@ class asset_cache {
 			}
 			$css[$base] = self::strip_bom(file_get_contents($src));
 		}
-		
+
 		foreach ( $css as $base => &$style ) {
 			$base = dirname($base) . '/';
 			$style = preg_replace("{url\s*\(\s*([\"']?)(?![\"']?https?://)(?:\./)?(.+?)\\1\s*\)}i", "url($1$base$2$1)", $style);
 			$style = self::compress_css( $style );
 		}
-		
+
 		cache_fs::put_contents($file, implode("\n\n", $css));
 	} # concat_styles()
 
@@ -197,8 +197,8 @@ class asset_cache {
         $scripts_done = true;
 		asset_cache::process_scripts( true );
 	} # wp_print_scripts()
-	
-	
+
+
 	/**
 	 * wp_print_footer_scripts()
 	 *
@@ -214,7 +214,7 @@ class asset_cache {
 
 		asset_cache::process_scripts( false );
 	} # wp_print_footer_scripts()
-	
+
 	/**
 	 * process_scripts()
 	 *
@@ -259,12 +259,6 @@ class asset_cache {
 			// if it is conditionally loaded let's ignore those
             if (isset($wp_scripts->registered[$handle]->extra["conditional"]))
                 continue;
-
-			if ( $handle == 'contact-form-7')
-				continue;
-
-			if ( ( $handle == 'gpr_reviews_readmore') || ( $handle == 'gpr_reviews_main_scripts') )
-				continue;
 
 			$jsPath = $wp_scripts->registered[$handle]->src;
 
@@ -331,7 +325,7 @@ class asset_cache {
 	}
 
 	/**
-	 * make_script_async()
+	 * make_script_defer()
 	 *
 	 * @param $tag
 	 * @param $handle
@@ -345,7 +339,7 @@ class asset_cache {
 //	        return $tag;
 //	    }
 
-		return str_replace( ' src', ' defer" src', $tag );
+		return str_replace( ' src', ' defer src', $tag );
 	}
 
 	/**
@@ -359,7 +353,7 @@ class asset_cache {
 	static function concat_scripts($file, $handles) {
 		global $wp_scripts;
 		$js = array();
-		
+
 		foreach ( $handles as $handle ) {
 			$src = $wp_scripts->registered[$handle]->src;
 			if ( substr($src, 0, 1) == '/' ) {
@@ -374,7 +368,7 @@ class asset_cache {
 			$script = self::strip_bom(file_get_contents($src));
 			$js[] = self::compress_js( $script );
 		}
-		
+
 		cache_fs::put_contents($file, implode("\n\n", $js));
 	} # concat_scripts()
 
@@ -419,7 +413,7 @@ class asset_cache {
 			# UTF-8 BOM
 			$str = substr($str, 3);
 		}
-		
+
 		return $str;
 	} # strip_bom()
 
@@ -476,7 +470,7 @@ class asset_cache {
 if ( !SCRIPT_DEBUG ) {
 	add_filter('wp_print_scripts', array('asset_cache', 'wp_print_scripts'), 1000000);
 	add_filter('wp_print_footer_scripts', array('asset_cache', 'wp_print_footer_scripts'), 9);
-//	add_filter('script_loader_tag', array('asset_cache', 'make_script_defer'), 10 , 3);
+	add_filter('script_loader_tag', array('asset_cache', 'make_script_defer'), 10 , 3);
 }
 
 if ( !sem_css_debug ) {

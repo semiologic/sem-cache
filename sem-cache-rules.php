@@ -108,30 +108,33 @@ class sem_cache_rules {
 		if ( $wp_rewrite->use_trailing_slashes ) {
 			$extra = <<<EOS
 
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond $cache_dir%{REQUEST_URI}index.html -f
-$cache_cookies
-RewriteCond %{QUERY_STRING} ^$
-RewriteCond %{THE_REQUEST} ^GET
-RewriteRule ^ $cache_url%{REQUEST_URI}index.html [L]
+RewriteCond %{REQUEST_URI} !^.*[^/]$
+RewriteCond %{REQUEST_URI} !^.*//.*$
+RewriteCond %{REQUEST_METHOD} !POST
+RewriteCond %{QUERY_STRING} !.*=.*
+RewriteCond %{HTTP:Cookie} !^.*(comment_author_|wordpress_logged_in|wp-postpass_).*$
+RewriteCond %{DOCUMENT_ROOT}/wp-content/cache/static%{REQUEST_URI}index.html -f
+RewriteRule ^ "$cache_url%{REQUEST_URI}index.html" [L]
 
 EOS;
 		} else {
 			$extra = <<<EOS
 
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond $cache_dir%{REQUEST_URI} -f
-$cache_cookies
-RewriteCond %{QUERY_STRING} ^$
-RewriteCond %{THE_REQUEST} ^GET
-RewriteRule ^ $cache_url%{REQUEST_URI} [L]
+RewriteCond %{REQUEST_URI} !^.*[^/]$
+RewriteCond %{REQUEST_URI} !^.*//.*$
+RewriteCond %{REQUEST_METHOD} !POST
+RewriteCond %{QUERY_STRING} !.*=.*
+RewriteCond %{HTTP:Cookie} !^.*(comment_author_|wordpress_logged_in|wp-postpass_).*$
+RewriteCond %{DOCUMENT_ROOT}/wp-content/cache/static%{REQUEST_URI}index.html -f
+RewriteRule ^ "$cache_url%{REQUEST_URI}" [L]
 
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond $cache_dir%{REQUEST_URI}.html -f
-$cache_cookies
-RewriteCond %{QUERY_STRING} ^$
-RewriteCond %{THE_REQUEST} ^GET
-RewriteRule ^ $cache_url%{REQUEST_URI}.html [L]
+RewriteCond %{REQUEST_URI} !^.*[^/]$
+RewriteCond %{REQUEST_URI} !^.*//.*$
+RewriteCond %{REQUEST_METHOD} !POST
+RewriteCond %{QUERY_STRING} !.*=.*
+RewriteCond %{HTTP:Cookie} !^.*(comment_author_|wordpress_logged_in|wp-postpass_).*$
+RewriteCond %{DOCUMENT_ROOT}/wp-content/cache/static%{REQUEST_URI}index.html -f
+RewriteRule ^ "$cache_url%{REQUEST_URI}.html" [L]
 
 EOS;
 		}
