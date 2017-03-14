@@ -329,6 +329,19 @@ class sem_cache {
 		sem_cache_manager::flush_cache();
 	} # flush_cache()
 
+    /**
+     * flush_assets()
+     *
+     * @return void
+     **/
+
+    static function flush_assets() {
+        if ( !class_exists('sem_cache_manager') )
+            include dirname(__FILE__) . '/sem-cache-manager.php';
+
+        sem_cache_manager::flush_assets();
+    } # flush_assets()
+
 	/**
 	 * cache_timeout()
 	 *

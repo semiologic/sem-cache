@@ -169,6 +169,24 @@ class sem_cache_admin {
 
 				#dump($static_cache, $memory_cache, $query_cache, $object_cache, $asset_cache, $gzip_cache);
 
+                // process excluded pages
+                $exclude_pages = stripslashes( $_POST['exclude_pages'] );
+                $pages = preg_split( "/[\s,]+/", $exclude_pages );
+                $exclude_pages = array();
+
+                foreach( $pages as $num => $page ) {
+                    $page = parse_url( $page, PHP_URL_PATH );
+                    if ( $page !== FALSE ) {
+                        if ( $page[0] != '/')
+                            $page = '/' . $page;
+                        if ( !in_array($page, $exclude_pages ) )
+                            $exclude_pages[] = $page;
+                    }
+                }
+
+                $exclude_pages = implode( ' ', $exclude_pages );
+                update_site_option( 'sem_cache_excluded_pages', $exclude_pages );
+
 				sem_cache_manager::enable_static();
 				sem_cache_manager::enable_memcached();
 				sem_cache_manager::enable_assets();
@@ -195,7 +213,6 @@ class sem_cache_admin {
 		}
 	} # save_options()
 
-
 	/**
 	 * edit_options()
 	 *
@@ -217,6 +234,10 @@ class sem_cache_admin {
 		$assets_errors = array();
 		$gzip_errors   = array();
 		$gzip_notice   = array();
+
+		$exclude_pages = get_site_option( 'sem_cache_excluded_pages', '' );
+
+		$disable_style = " style='opacity: 0.7;cursor:auto'";
 
 		if ( ! sem_cache_manager::can_memcached() ) {
 			$error           = sprintf( __( '<a href="%1$s">Memcache</a> is not installed on your server, or the php extension is misconfigured, or the daemon is not running. Note that shared hosts never offer memcache; you need a dedicated server or a VPS to take advantage of it. Also note that there are two PHP extensions, and that only <a href="%1$s">this one</a> (Memcache not Memcached) is supported.',
@@ -283,19 +304,22 @@ class sem_cache_admin {
 
 		if ( function_exists( 'apache_get_modules' ) ) {
 			if ( ! apache_mod_loaded( 'mod_deflate' ) ) {
-				$error = __( 'mod_deflate is required in order to allow Apache to conditionally compress the files it sends. (mod_gzip is not supported because it is too resource hungry.)  Please contact your host so they configure Apache accordingly.',
+				$error = __( 'mod_deflate is required in order to allow Apache to conditionally compress the files it sends. (mod_gzip is not supported because it is too resource hungry.)  '
+                    . 'Please contact your host so they configure Apache accordingly.',
 					'sem-cache' );
 				$gzip_errors[] = $error;
 			}
 
 			if ( ! apache_mod_loaded( 'mod_headers' ) ) {
-				$error = __( 'mod_headers is required in order to avoid that proxies serve gzipped items to user agents who cannot use them. Please contact your host so they configure Apache accordingly.',
+				$error = __( 'mod_headers is required in order to avoid that proxies serve gzipped items to user agents who cannot use them. '
+                    . 'Please contact your host so they configure Apache accordingly.',
 					'sem-cache' );
 				$gzip_errors[] = $error;
 			}
 		} else {
 			# just assume it works
-			$gzip_notice[] = __( 'gzip caching requires mod_deflate and mod_headers, but the Semiologic Cache plugin cannot determine whether they are installed on your server. Please check with your host.',
+			$gzip_notice[] = __( 'gzip caching requires mod_deflate and mod_headers, but the Semiologic Cache plugin cannot determine whether they are installed on your server. '
+                . 'Please check with your host.',
 				'sem-cache' );
 		}
 
@@ -347,12 +371,9 @@ class sem_cache_admin {
 		     . '<button type="submit" name="action" value="flush" class="submit button">'
 		     . sprintf( __( 'Flush %d cached files', 'sem-cache' ), $files )
 		     . '</button>'
-		     . ' '
-		     . '<button type="submit" name="action" value="clean" class="submit button">'
-		     . sprintf( __( 'Flush %d expired files', 'sem-cache' ), $expired )
-		     . '</button>'
 		     . '<p>'
-		     . __( 'The first of the above four buttons will autodetect the best means to improve the performance of your site, and turn the cache on. The second one will turn the cache off. The last two will retain your settings, and stick to flushing the cache.',
+		     . __( 'The first of the above three buttons will autodetect the best means to improve the performance of your site, and turn the cache on. '
+             . 'The second one will turn the cache off while the last one will retain your settings and strictly flushes the cache.',
 				'sem-cache' )
 		     . '</p>' . "\n"
 		     . '</td>' . "\n"
@@ -364,7 +385,7 @@ class sem_cache_admin {
 		     . '</th>' . "\n"
 		     . '<td>'
 		     . '<p>'
-		     . '<label>'
+		     . '<label' . ( $static_errors ? $disable_style : '' ) . '>'
 		     . '<input type="checkbox"'
 		     . ' id="static_cache" name="static_cache"'
 		     . checked( (bool) get_site_option( 'static_cache' ), true, false )
@@ -378,7 +399,7 @@ class sem_cache_admin {
 		     . '</label>'
 		     . '</p>' . "\n"
 		     . '<p>'
-		     . '<label>'
+            . '<label' . ( $memory_errors ? $disable_style : '' ) . '>'
 		     . '<input type="checkbox"'
 		     . ' id="memory_cache" name="memory_cache"'
 		     . checked( (bool) get_site_option( 'memory_cache' ), true, false )
@@ -392,23 +413,23 @@ class sem_cache_admin {
 		     . '</label>'
 		     . '</p>' . "\n"
 		     . '<p>'
-		     . __( 'The static cache will attempt to serve previously rendered version of the requested web pages to visitors who aren\'t logged in. The key drawback is that your visitors are not always viewing the latest version of your web pages. Lists of recent posts and recent comments, for instance, may take up to  hours to refresh across your site. In addition, it prevents any random elements that are introduced at the php level from working.',
+		     . __( 'The static cache will attempt to serve previously rendered version of the requested web pages to visitors who aren\'t logged in. '
+             . 'The key drawback is that your visitors are not always viewing the latest version of your web pages. Key web pages on your site will get refreshed when you edit your posts and pages, '
+             . 'so as to ensure they\'re reasonably fresh. Statically cached web pages expire after 24 hours.',
 				'sem-cache' )
 		     . '</p>' . "\n"
 		     . '<p>'
-		     . __( 'Key web pages on your site will get refreshed when you edit your posts and pages, so as to ensure they\'re reasonably fresh. Newly approved comments will trigger throttled refreshes of an even smaller subset of web pages. Statically cached web pages expire after 24 hours.',
+		     . __( 'The benefit of the filesystem-based static cache is that your site\'s key web pages, such as the site\'s front page or individual posts, will be served without even loading PHP. '
+             . 'This allows for maximum scalability of your site and provides for the fastest page content rendering.',
 				'sem-cache' )
 		     . '</p>' . "\n"
 		     . '<p>'
-		     . __( 'The benefit of the filesystem-based static cache is that your site\'s key web pages, such as the site\'s front page or individual posts, will be served without even loading PHP. This allows for maximum scalability if your site is getting hammered by excrutiating traffic.',
+		     . __( 'The memcache-based static cache works in a similar manner, but stores cached pages in memcache (memory) rather than on the filesystem (stored on disk). '
+             . 'PHP is always loaded, so it\'s a bit slower for key web pages; but it\'s much faster than using the filesystem for other web pages.',
 				'sem-cache' )
 		     . '</p>' . "\n"
 		     . '<p>'
-		     . __( 'The memcache-based static cache works in a similar manner, but stores cached pages in memcache rather than on the filesystem. PHP is always loaded, so it\'s a bit slower for key web pages; but it\'s much faster than using the filesystem for other web pages.',
-				'sem-cache' )
-		     . '</p>' . "\n"
-		     . '<p>'
-		     . __( 'You\'ll usually want both turned on, in order to get the best of both worlds. The only exception is if your site is hosted on multiple servers: in this case, consider sticking to the memory-based static cache, because of the lag introduced by the filesystem\'s synchronisations from a server to the next.',
+		     . __( 'You\'ll usually want both turned on, in order to get the best of both worlds.',
 				'sem-cache' )
 		     . '</p>'
 		     . $static_errors
@@ -416,13 +437,31 @@ class sem_cache_admin {
 		     . '</td>' . "\n"
 		     . '</tr>' . "\n";
 
+        echo '<tr>' . "\n"
+            . '<th scope="row">'
+            . __( 'Pages to Exclude', 'sem-cache' )
+            . '</th>' . "\n"
+            . '<td>'
+            . '<label>'
+            . __( 'Pages that should be excluded from processing:', 'sem-cache' )
+            . '<textarea name="exclude_pages" cols="58" rows="4" class="widefat">'
+            . esc_html( $exclude_pages )
+            . '</textarea>' . "\n"
+            . __( 'Pages should be separated by a comma, space or carriage return. Only the relative path should be entered and any scheme (http:\\ or https:\\'
+            . 'or the root domain will be stripped off.', 'sem-cache' )
+            . '</label>&nbsp;&nbsp;'
+            . '<i>' .__( 'Example: /about-us/, /contact/, .', 'sem-cache' ) . '</i>'
+            . '<br />' . "\n"
+            . '</td>'
+            . '</tr>' . "\n";
+
 		echo '<tr>' . "\n"
 		     . '<th scope="row">'
 		     . __( 'Query Cache', 'sem-cache' )
 		     . '</th>' . "\n"
 		     . '<td>'
 		     . '<p>'
-		     . '<label>'
+            . '<label' . ( $query_errors ? $disable_style : '' ) . '>'
 		     . '<input type="checkbox"'
 		     . ' id="query_cache" name="query_cache"'
 		     . checked( (bool) get_site_option( 'query_cache' ), true, false )
@@ -440,11 +479,13 @@ class sem_cache_admin {
 				'sem-cache' )
 		     . '</p>' . "\n"
 		     . '<p>'
-		     . __( 'The query cache primarily benefits commentors and users who are logged in; in particular yourself. These users cannot benefit from a static cache, because each of web page on your site potentially contains data that is specific to them; but they fully benefit from a query cache.',
+		     . __( 'The query cache primarily benefits commentors and users who are logged in; in particular yourself. These users cannot benefit from a static cache, because each web page '
+             . 'on your site potentially contains data that is specific to them; but they fully benefit from a query cache.',
 				'sem-cache' )
 		     . '</p>' . "\n"
 		     . '<p>'
-		     . __( 'The query cache\'s refresh policy is similar to that of the memory-based static cache: key queries are flushed whenever you edit posts or pages, or approve new comments. All of the remaining queries expire after 24 hours.',
+		     . __( 'The query cache\'s refresh policy is similar to that of the memory-based static cache: key queries are flushed whenever you edit posts or pages, or approve new comments. '
+             . 'All of the remaining queries expire after 24 hours.',
 				'sem-cache' )
 		     . '</p>' . "\n"
 		     . $query_errors
@@ -457,7 +498,7 @@ class sem_cache_admin {
 		     . '</th>' . "\n"
 		     . '<td>'
 		     . '<p>'
-		     . '<label>'
+            . '<label' . ( $object_errors ? $disable_style : '' ) . '>'
 		     . '<input type="checkbox"'
 		     . ' id="object_cache" name="object_cache"'
 		     . checked( (bool) get_site_option( 'object_cache' ), true, false )
@@ -468,10 +509,11 @@ class sem_cache_admin {
 		     . ' />'
 		     . '&nbsp;'
 		     . __( 'Make WordPress objects persistent.', 'sem-cache' )
-		     . '</label>'
+            . '<label' . ( $object_errors ? $disable_style : '' ) . '>'
 		     . '</p>' . "\n"
 		     . '<p>'
-		     . __( 'The object cache stores granular bits of information in memcache, and makes them available from a page to the next. This allows WordPress to load web pages without always needing to retrieve things such as options, users, or individual entries from the database.',
+		     . __( 'The object cache stores granular bits of information in memcache, and makes them available from a page to the next. This allows WordPress to load web pages without '
+             . 'always needing to retrieve things such as options, users, or individual entries from the database.',
 				'sem-cache' )
 		     . '</p>' . "\n"
 		     . '<p>'
@@ -479,7 +521,7 @@ class sem_cache_admin {
 				'sem-cache' )
 		     . '</p>' . "\n"
 		     . '<p>'
-		     . __( 'The object cache is automatically turned on, and cannot be disabled, if you use the memory-based static cache or the query cache.',
+		     . __( 'The object cache is automatically turned on, and cannot be disabled, when you use the memory-based static cache or the query cache.',
 				'sem-cache' )
 		     . '</p>' . "\n"
 		     . $object_errors
@@ -492,7 +534,7 @@ class sem_cache_admin {
 		     . '</th>' . "\n"
 		     . '<td>'
 		     . '<p>'
-		     . '<label>'
+            . '<label' . ( $assets_errors ? $disable_style : '' ) . '>'
 		     . '<input type="checkbox"'
 		     . ' id="asset_cache" name="asset_cache"'
 		     . checked( (bool) get_site_option( 'asset_cache' ), true, false )
@@ -506,7 +548,8 @@ class sem_cache_admin {
 		     . '</label>'
 		     . '</p>' . "\n"
 		     . '<p>'
-		     . __( 'The asset cache speeds your site up by minimizing the number of server requests. It achieve this by concatenating your javascript and CSS files on the front end.',
+		     . __( 'The asset cache speeds your site up by minimizing the number of server requests. It achieves this by concatenating your javascript and CSS files on the front end '
+             . 'and reducing the file size by eliminating extranous whitespace and other code size reduction techniques.',
 				'sem-cache' )
 		     . '</p>' . "\n"
 		     . '<p>'
@@ -523,7 +566,7 @@ class sem_cache_admin {
 		     . '</th>' . "\n"
 		     . '<td>'
 		     . '<p>'
-		     . '<label>'
+            . '<label' . ( $gzip_errors ? $disable_style : '' ) . '>'
 		     . '<input type="checkbox"'
 		     . ' id="gzip_cache" name="gzip_cache"'
 		     . checked( (bool) get_site_option( 'gzip_cache' ), true, false )

@@ -282,6 +282,22 @@ class static_cache {
 			return $buffer;
 		}
 
+		// let's see if this page is excluded
+        $exclude_pages = get_site_option( 'sem_cache_excluded_pages', '' );
+        if ( ! empty (  $exclude_pages ) ) {
+            $exclude_pages = explode( ' ', $exclude_pages );
+            $request_uri = $_SERVER['REQUEST_URI'];
+            $request_uri = parse_url( $request_uri, PHP_URL_PATH );
+            if ( in_array( $request_uri, $exclude_pages) )
+                return $buffer;
+        }
+
+        // and no point caching querystring requests since htaccess ignores those
+/*        $request_uri = $_SERVER['REQUEST_URI'];
+        $querystring = parse_url( $request_uri, PHP_URL_QUERY );
+        if ( $querystring !== NULL )
+            return $buffer;
+*/
 		#don't cache a contact form page due to spam prevention techniques
 //		if ( preg_match("/(\bsem_contact_form\b)/i",$buffer) )
 //				return $buffer;
@@ -329,7 +345,7 @@ class static_cache {
 			return $buffer;  
 */
 		// made it through all the checks.  Let's minify the html now
-//		$buffer = self::minify_html( $buffer );
+		$buffer = self::minify_html( $buffer );
 
 		if ( self::$static ) {
 			$file = preg_replace("/#.*/", '', $_SERVER['REQUEST_URI']);
