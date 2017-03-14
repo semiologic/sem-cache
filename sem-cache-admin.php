@@ -170,21 +170,29 @@ class sem_cache_admin {
 				#dump($static_cache, $memory_cache, $query_cache, $object_cache, $asset_cache, $gzip_cache);
 
                 // process excluded pages
-                $exclude_pages = stripslashes( $_POST['exclude_pages'] );
-                $pages = preg_split( "/[\s,]+/", $exclude_pages );
-                $exclude_pages = array();
-
-                foreach( $pages as $num => $page ) {
-                    $page = parse_url( $page, PHP_URL_PATH );
-                    if ( $page !== FALSE ) {
-                        if ( $page[0] != '/')
-                            $page = '/' . $page;
-                        if ( !in_array($page, $exclude_pages ) )
-                            $exclude_pages[] = $page;
+                $exclude_pages = '';
+                $pages = stripslashes( $_POST['exclude_pages'] );
+                if ( $pages != '' ) {
+                    $exclude_pages = array();
+                    $pages = preg_split( "/[\s,]+/", $pages );
+                    foreach ( $pages as $num => $page ) {
+                        $page = parse_url( $page, PHP_URL_PATH );
+                        if ( $page !== FALSE ) {
+                            $page = str_replace( '\\', '/', $page );
+                            $segments = explode( '/', $page );
+                            if ( strpos( $segments[count($segments) - 1], '.' ) !== FALSE)
+                                array_pop( $segments );
+                            $page = implode('/', $segments);
+                            if ( $page[0] != '/' )
+                                $page = '/' . $page;
+                            $page = trailingslashit( $page );
+                            if ( !in_array( $page, $exclude_pages ) )
+                                $exclude_pages[] = $page;
+                        }
                     }
-                }
 
-                $exclude_pages = implode( ' ', $exclude_pages );
+                    $exclude_pages = implode( ' ', $exclude_pages );
+                }
                 update_site_option( 'sem_cache_excluded_pages', $exclude_pages );
 
 				sem_cache_manager::enable_static();
@@ -447,10 +455,10 @@ class sem_cache_admin {
             . '<textarea name="exclude_pages" cols="58" rows="4" class="widefat">'
             . esc_html( $exclude_pages )
             . '</textarea>' . "\n"
-            . __( 'Pages should be separated by a comma, space or carriage return. Only the relative path should be entered and any scheme (http:\\ or https:\\'
-            . 'or the root domain will be stripped off.', 'sem-cache' )
+            . __( 'Pages can be separated by a comma, space or carriage return. Only the relative path should be entered and any scheme (http:// or https://'
+                . ' or the root domain (example.com) will be stripped off.  Proceeding and trailing slashes will be added, as needed.', 'sem-cache' )
             . '</label>&nbsp;&nbsp;'
-            . '<i>' .__( 'Example: /about-us/, /contact/, .', 'sem-cache' ) . '</i>'
+            . '<i>' .__( 'Examples: /about-us/, /contact/, /faq/.', 'sem-cache' ) . '</i>'
             . '<br />' . "\n"
             . '</td>'
             . '</tr>' . "\n";
