@@ -2,11 +2,11 @@
 Contributors: Denis-de-Bernardy && Mike Koepke
 Donate link: https://www.semiologic.com/donate/
 Tags: semiologic
-Requires at least: 3.3
-Tested up to: 4.3
+Requires at least: 4.5
+Tested up to: 4.7.3
 Stable tag: trunk
 
-A high performance cache for WordPress.
+A high performance cache for WordPress sites.
 
 
 == Description ==
@@ -48,6 +48,20 @@ If the PHP constant DONOTCACHEPAGE is set to 'true', caching of the page is igno
 Note: Asset caching (css and js) still occurs.  This flag only effects static page caching.
 
 
+= Exclusion of Pages =
+
+With version 3.0 you can now specify pages you do not wish to cache.   You simply enter the relative uri in Settings->Cache.
+
+/about-us/, /contact/, /faq/.
+
+= FAQ =
+
+Memcached support.   This plugin will support memcached installations on your VPS or dedicated machine for greater caching performance.
+
+Besides a memcached server installed and running, you will need the PHP Memcache extension installed.  [Memcache](http://www.php.net/manual/en/book.memcache.php).
+
+The Memcached version will not work.
+
 = Help Me! =
 
 The [Semiologic Support Page](https://www.semiologic.com/support/) is the best place to report issues.
@@ -66,6 +80,18 @@ The [Semiologic Support Page](https://www.semiologic.com/support/) is the best p
 == Change Log ==
 
 = 3.0 =
+
+- New: Ability to exclude page urls from caching
+
+- Change: Refinements to Settings screen descriptions of the options
+- Change: Exclude Yoast SEO sitemap-index.xml from being cached
+- Change: Further htaccess rules tweaks for better caching and site performance
+- Change: Better handling of plugins and themes that append additional javascript variables into page source during page rendering
+- Change: Do not excluded mobile devices for caching with rise of responsive website designs
+
+- Fix: Static caching htaccess rules not always triggering to deliver static file
+
+- Under Hood: Large scaling refactoring of sources files to improve maintability amd reuse of caching modules elsewhere.
 
 
 = 2.13 =
