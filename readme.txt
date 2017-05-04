@@ -3,7 +3,7 @@ Contributors: Denis-de-Bernardy && Mike Koepke
 Donate link: https://www.semiologic.com/donate/
 Tags: semiologic
 Requires at least: 4.5
-Tested up to: 4.7.3
+Tested up to: 4.7.4
 Stable tag: trunk
 
 A high performance cache for WordPress sites.
@@ -79,6 +79,10 @@ The [Semiologic Support Page](https://www.semiologic.com/support/) is the best p
 
 == Change Log ==
 
+= 3.0.1 =
+
+- PHP 7.x compat tweaks
+
 = 3.0 =
 
 - New: Ability to exclude page urls from caching
@@ -92,7 +96,6 @@ The [Semiologic Support Page](https://www.semiologic.com/support/) is the best p
 - Fix: Static caching htaccess rules not always triggering to deliver static file
 
 - Under Hood: Large scaling refactoring of sources files to improve maintability amd reuse of caching modules elsewhere.
-
 
 = 2.13 =
 

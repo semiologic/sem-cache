@@ -267,7 +267,7 @@ class sem_cache_admin {
 			$query_errors[] = $error;
 		}
 
-		if ( ( @ini_get( 'safe_mode' ) || @ini_get( 'open_basedir' ) ) && ! wp_mkdir_p( WP_CONTENT_DIR . '/cache' ) ) {
+		if ( @ini_get( 'open_basedir' ) && ! wp_mkdir_p( WP_CONTENT_DIR . '/cache' ) ) {
 			$error = __( 'Safe mode or an open_basedir restriction is enabled on your server.', 'sem-cache' );
 			$static_errors[] = $error;
 			$assets_errors[] = $error;

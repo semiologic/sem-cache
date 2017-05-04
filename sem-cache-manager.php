@@ -134,7 +134,7 @@ class sem_cache_manager {
 				|| is_writable(WP_CONTENT_DIR . '/advanced-cache.php') )
 			&& ( !file_exists(WP_CONTENT_DIR . '/cache') && is_writable(WP_CONTENT_DIR)
 				|| is_dir(WP_CONTENT_DIR . '/cache') && is_writable(WP_CONTENT_DIR . '/cache') )
-			&& 	( !@ini_get('safe_mode') && !@ini_get('open_basedir')
+			&& 	( !@ini_get('open_basedir' )
 				|| wp_mkdir_p(WP_CONTENT_DIR . '/cache') )
 			&& !( function_exists('is_multisite') && is_multisite() );
 
@@ -275,7 +275,7 @@ class sem_cache_manager {
 
 		$can_assets = ( !file_exists(WP_CONTENT_DIR . '/cache') && is_writable(WP_CONTENT_DIR)
 					|| is_dir(WP_CONTENT_DIR . '/cache') && is_writable(WP_CONTENT_DIR . '/cache') )
-				&& ( !@ini_get('safe_mode') && !@ini_get('open_basedir')
+				&& ( !@ini_get('open_basedir' )
 					|| wp_mkdir_p(WP_CONTENT_DIR . '/cache') );
 
 		return $can_assets;

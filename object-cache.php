@@ -387,7 +387,7 @@ class object_cache {
 		//error_log("Connection failure for $host:$port\n", 3, '/tmp/memcached.txt');
 	}
 
-	function object_cache() {
+	public function __construct() {
 		global $memcached_servers;
 
 		if ( isset($memcached_servers) )
